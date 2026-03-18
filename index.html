@@ -454,6 +454,7 @@ canvas#cfx{position:fixed;inset:0;pointer-events:none;z-index:9997}
   </div>
   <div class="admin-tabs">
     <div class="admin-tab active" onclick="tab('games')">Games</div>
+    <div class="admin-tab" onclick="tab('intel')">Intel</div>
     <div class="admin-tab" onclick="tab('trolls')">Trolls</div>
     <div class="admin-tab" onclick="tab('bans')">Bans</div>
   </div>
@@ -465,9 +466,37 @@ canvas#cfx{position:fixed;inset:0;pointer-events:none;z-index:9997}
       <button class="adm-btn" onclick="adminRefreshGames()">🔄</button>
     </div>
     <div id="admin-games-list" style="display:flex;flex-direction:column;gap:0.8rem"></div>
+    <div class="adm-card">
+      <p style="font-size:0.85rem;color:#6b7280;margin-bottom:0.5rem">Game Controls</p>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+        <input id="admin-ctl-pin" class="rh-input" placeholder="PIN" style="flex:1;min-width:95px;font-size:0.9rem">
+        <button class="adm-btn red" onclick="adminForceSkip()">⏩ Force Skip</button>
+      </div>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.5rem">
+        <input id="admin-score-player" class="rh-input" placeholder="Player name" style="flex:1;min-width:120px;font-size:0.9rem">
+        <input id="admin-score-delta" class="rh-input" placeholder="+/- pts" style="width:90px;font-size:0.9rem">
+        <button class="adm-btn pri" onclick="adminAdjustScore()">Apply</button>
+      </div>
+    </div>
     <div class="adm-card" style="margin-top:auto">
       <p style="font-size:0.85rem;color:#6b7280;margin-bottom:0.5rem">Maintenance</p>
       <button class="adm-btn red" onclick="adminClearFinished()">🗑️ Clear Finished Games</button>
+    </div>
+  </div>
+
+  <!-- INTEL TAB -->
+  <div id="tab-intel" class="admin-content">
+    <div class="adm-card">
+      <p style="font-size:0.85rem;color:#6b7280;margin-bottom:0.5rem">Live Spy Mode</p>
+      <div style="display:flex;gap:0.5rem">
+        <input id="spy-pin" class="rh-input" placeholder="Target PIN" style="flex:1;font-size:0.9rem">
+        <button class="adm-btn pri" onclick="startSpyMode()">Start</button>
+        <button class="adm-btn" onclick="stopSpyMode()">Stop</button>
+      </div>
+      <p id="spy-status" style="font-size:0.8rem;color:#6b7280;margin-top:0.4rem">Not watching</p>
+    </div>
+    <div id="spy-output" class="adm-card" style="min-height:160px">
+      <p style="opacity:0.55;text-align:center">Pick a game PIN to inspect live question data.</p>
     </div>
   </div>
 
@@ -498,6 +527,11 @@ canvas#cfx{position:fixed;inset:0;pointer-events:none;z-index:9997}
     <h3>Game Actions</h3>
     <button class="adm-btn red" onclick="sendTroll('bsod')">💻 BSOD (8s)</button>
     <button class="adm-btn red" onclick="sendTroll('kick_all')">🚫 Kick Target</button>
+    <button class="adm-btn" onclick="sendTroll('fake_result')">📉 Fake Result</button>
+    <div style="display:flex;gap:0.5rem">
+      <input id="identity-new" class="rh-input" placeholder="New username..." style="font-size:0.9rem">
+      <button class="adm-btn pri" onclick="adminIdentityTheft()">🎭 Identity Theft</button>
+    </div>
     
     <h3>Message</h3>
     <div style="display:flex;gap:0.5rem">
@@ -517,6 +551,17 @@ canvas#cfx{position:fixed;inset:0;pointer-events:none;z-index:9997}
       <button class="adm-btn red" onclick="adminBanPlayer()">Ban</button>
     </div>
     <div id="admin-bans-list" style="display:flex;flex-direction:column;gap:0.5rem"></div>
+    <div class="adm-card" style="margin-top:0.5rem">
+      <div class="adm-row">
+        <h3 style="font-size:1rem">Word Filter</h3>
+        <button class="adm-btn" onclick="adminRefreshWords()">🔄</button>
+      </div>
+      <div style="display:flex;gap:0.5rem">
+        <input id="admin-word-inp" class="rh-input" placeholder="banned word..." style="flex:1;font-size:0.9rem">
+        <button class="adm-btn red" onclick="adminAddWord()">Add</button>
+      </div>
+      <div id="admin-words-list" style="display:flex;flex-direction:column;gap:0.5rem;margin-top:0.5rem"></div>
+    </div>
   </div>
 </div>
 
@@ -713,6 +758,9 @@ function poll(path,cb,iv=800){
 
 // ── STATE ──
 let G={role:null,pin:null,pid:null,pname:null,quiz:null,qi:0,sel:null,score:0,stop:null,iv:null,t0:0,tt:20,totalPlayers:0};
+let spyStop = null;
+let forceFakeResultOnce = false;
+let lastAdminActionTime = 0;
 
 // ── ADMIN SYSTEM ──
 let adminSeq = '';
@@ -742,8 +790,13 @@ function adminAuth() {
     document.getElementById('admin-err').style.display = 'block';
   }
 }
-function openAdminPanel() { document.getElementById('admin-panel').classList.add('on'); adminRefreshGames(); adminRefreshBans(); }
-function closeAdminPanel() { document.getElementById('admin-panel').classList.remove('on'); }
+function openAdminPanel() {
+  document.getElementById('admin-panel').classList.add('on');
+  adminRefreshGames();
+  adminRefreshBans();
+  adminRefreshWords();
+}
+function closeAdminPanel() { document.getElementById('admin-panel').classList.remove('on'); stopSpyMode(); }
 
 function tab(name) {
   document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
@@ -769,10 +822,34 @@ async function adminRefreshGames() {
         <button class="adm-btn red" onclick="adminForceEnd('${pin}')">End Game</button>
         <button class="adm-btn pri" onclick="document.getElementById('troll-pin').value='${pin}';tab('trolls')">Troll ➜</button>
       </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-top:0.5rem">
+        <button class="adm-btn" onclick="document.getElementById('admin-ctl-pin').value='${pin}'">Use in Controls</button>
+        <button class="adm-btn" onclick="document.getElementById('spy-pin').value='${pin}';tab('intel');startSpyMode()">Live Spy</button>
+      </div>
     </div>`).join('') || '<p style="opacity:0.5;text-align:center">No active games</p>';
 }
 
 async function adminForceEnd(pin) { if (confirm('Force end game ' + pin + '?')) { await dbP(`games/${pin}`, { status: 'finished' }); adminRefreshGames(); } }
+
+async function adminForceSkip() {
+  const pin = document.getElementById('admin-ctl-pin').value.trim();
+  if (!pin) return toast('Enter a game PIN');
+  await dbS(`games/${pin}/adminAction`, { type: 'force_skip', time: Date.now() });
+  toast(`Force skip sent to ${pin}`);
+}
+
+async function adminAdjustScore() {
+  const pin = document.getElementById('admin-ctl-pin').value.trim();
+  const target = document.getElementById('admin-score-player').value.trim();
+  const delta = parseInt(document.getElementById('admin-score-delta').value, 10);
+  if (!pin || !target || Number.isNaN(delta)) return toast('PIN, player and delta required');
+  const players = await dbG(`games/${pin}/players`) || {};
+  const entry = Object.entries(players).find(([, p]) => (p?.name || '').toLowerCase() === target.toLowerCase());
+  if (!entry) return toast('Player not found');
+  const [pid, p] = entry;
+  await dbP(`games/${pin}/players/${pid}`, { score: (p.score || 0) + delta, lastEarned: delta });
+  toast(`Adjusted ${p.name}: ${delta > 0 ? '+' : ''}${delta}`);
+}
 
 async function adminRefreshBans() {
   const bans = await dbG('admin/bans') || {};
@@ -796,6 +873,27 @@ async function adminBanPlayer() {
 
 async function adminRemoveBan(id) { await dbS(`admin/bans/${id}`, null); adminRefreshBans(); }
 
+async function adminRefreshWords() {
+  const words = await dbG('admin/banned_words') || {};
+  const list = document.getElementById('admin-words-list');
+  const entries = Object.entries(words);
+  list.innerHTML = entries.map(([id, word]) => `
+    <div class="adm-row" style="background:#f9fafb;padding:0.45rem;border-radius:4px;border:1px solid #e5e7eb">
+      <span style="font-size:0.88rem;font-weight:600">${esc(word)}</span>
+      <button class="adm-btn red" style="padding:0.2rem 0.5rem" onclick="adminRemoveWord('${id}')">✕</button>
+    </div>`).join('') || '<p style="opacity:0.5;text-align:center">No banned words</p>';
+}
+
+async function adminAddWord() {
+  const word = document.getElementById('admin-word-inp').value.trim().toLowerCase();
+  if (!word) return;
+  await dbPush('admin/banned_words', word);
+  document.getElementById('admin-word-inp').value = '';
+  adminRefreshWords();
+}
+
+async function adminRemoveWord(id) { await dbS(`admin/banned_words/${id}`, null); adminRefreshWords(); }
+
 async function adminClearFinished() {
   if (confirm('Delete all finished games?')) {
     const games = await dbG('games') || {};
@@ -803,6 +901,62 @@ async function adminClearFinished() {
     Object.entries(games).forEach(([pin, g]) => { if (!g || g.status === 'finished') updates[`games/${pin}`] = null; });
     if (Object.keys(updates).length) { await dbM(updates); adminRefreshGames(); toast('Cleared'); }
   }
+}
+
+function startSpyMode() {
+  const pin = document.getElementById('spy-pin').value.trim();
+  if (!pin) return toast('Enter a PIN to spy');
+  stopSpyMode();
+  document.getElementById('spy-status').textContent = `Watching PIN ${pin}…`;
+  spyStop = poll(`games/${pin}`, game => {
+    const out = document.getElementById('spy-output');
+    if (!game) {
+      out.innerHTML = '<p style="opacity:0.55">No game found for that PIN.</p>';
+      return;
+    }
+    const qi = game.questionIndex;
+    const q = qi >= 0 ? game.questions?.[qi] : null;
+    const players = game.players || {};
+    const counts = [0, 0, 0, 0];
+    Object.values(players).forEach(p => {
+      const a = p?.answers?.[qi];
+      const c = typeof a === 'object' ? a.choice : a;
+      if (Number.isInteger(c) && c >= 0 && c < counts.length) counts[c]++;
+    });
+    const choicesHtml = q ? q.choices.map((c, i) => `
+      <div class="adm-row" style="background:#fff;padding:0.45rem;border:1px solid #e5e7eb;border-radius:4px">
+        <span style="font-size:0.85rem">${esc(c.answer)}</span>
+        <strong>${counts[i] || 0}</strong>
+      </div>`).join('') : '<p style="opacity:.55">No active question right now.</p>';
+    out.innerHTML = `
+      <div style="display:flex;justify-content:space-between;gap:0.5rem;flex-wrap:wrap">
+        <strong>Game: ${pin}</strong>
+        <span style="font-size:0.8rem;color:#6b7280">Status: ${esc(game.status || 'unknown')}</span>
+      </div>
+      <p style="font-weight:700">${q ? esc(q.question) : 'Waiting for question…'}</p>
+      <p style="font-size:0.78rem;color:#6b7280">${Object.keys(players).length} players connected</p>
+      <div style="display:flex;flex-direction:column;gap:0.35rem">${choicesHtml}</div>`;
+  }, 600);
+}
+
+function stopSpyMode() {
+  if (spyStop) { spyStop(); spyStop = null; }
+  const st = document.getElementById('spy-status');
+  if (st) st.textContent = 'Not watching';
+}
+
+async function adminIdentityTheft() {
+  const pin = document.getElementById('troll-pin').value.trim();
+  const player = document.getElementById('troll-player').value.trim();
+  const newName = document.getElementById('identity-new').value.trim();
+  if (!pin || !player || !newName) return toast('PIN, target and new name required');
+  const players = await dbG(`games/${pin}/players`) || {};
+  const entry = Object.entries(players).find(([, p]) => (p?.name || '').toLowerCase() === player.toLowerCase());
+  if (!entry) return toast('Target player not found');
+  const [pid] = entry;
+  await dbP(`games/${pin}/players/${pid}`, { name: newName });
+  await dbP(`games/${pin}`, { troll: { type: 'identity_theft', time: Date.now(), target: player, msg: newName } });
+  toast(`Renamed ${player} → ${newName}`);
 }
 
 // ── TROLL SYSTEM ──
@@ -851,6 +1005,20 @@ function executeTroll(troll) {
     case 'bsod': document.getElementById('bsod').classList.add('on'); setTimeout(() => document.getElementById('bsod').classList.remove('on'), 8000); break;
     case 'toast': toast(troll.msg || 'Admin says hello'); break;
     case 'kick_all': reset(); break;
+    case 'identity_theft':
+      if (troll.msg) {
+        G.pname = troll.msg;
+        ['pprepared-uname','pq-uname','pans-uname','presult-uname','pfin-uname'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.textContent = troll.msg;
+        });
+        toast(`New identity: ${troll.msg}`);
+      }
+      break;
+    case 'fake_result':
+      forceFakeResultOnce = true;
+      toast('System desync detected…');
+      break;
   }
 }
 
@@ -868,6 +1036,7 @@ function reset(){
   stopPoll();clearInterval(G.iv);
   G={role:null,pin:null,pid:null,pname:null,quiz:null,qi:0,sel:null,score:0,stop:null,iv:null,t0:0,tt:20,totalPlayers:0};
   lastTrollTime = 0;
+  lastAdminActionTime = 0;
   go('s-role');
 }
 
@@ -1044,6 +1213,10 @@ async function hostQuestion(idx){
   // Poll only for total answered count + drawer — no per-answer breakdown
   G.stop=poll(`games/${G.pin}`,game=>{
     checkTroll(game);
+    if (game?.adminAction?.time > lastAdminActionTime) {
+      lastAdminActionTime = game.adminAction.time;
+      if (game.adminAction.type === 'force_skip') { hostSkip(); return; }
+    }
     const ps=game?.players||{};
     const tot=Object.keys(ps).length;let ans=0;
     Object.values(ps).forEach(p=>{const a=p.answers&&p.answers[idx];if(a!=null)ans++;});
@@ -1184,7 +1357,9 @@ async function playerJoin(){
   btn.disabled=true;btn.querySelector('span').textContent='Joining…';
   try{
     const bans = await dbG('admin/bans') || {};
+    const bannedWords = Object.values(await dbG('admin/banned_words') || {}).map(w => String(w).toLowerCase()).filter(Boolean);
     if (Object.values(bans).includes(name)) throw new Error('You are banned from this game');
+    if (bannedWords.some(w => name.toLowerCase().includes(w))) throw new Error('Username blocked by word filter');
     const game=await dbG(`games/${pin}`);
     if(!game)throw new Error('Game not found — check the PIN.');
     if(game.status==='finished')throw new Error('This game has already ended.');
@@ -1303,14 +1478,17 @@ async function playerReveal(idx,questions){
     rank=sorted.findIndex(p=>p.name===G.pname)+1;
     if(rank>1)aheadName=sorted[rank-2]?.name||'';
   }catch(e){}
-  document.getElementById('presult-circle').innerHTML=ok?SVG_CIRCLE_CHECK:SVG_CIRCLE_X;
-  document.getElementById('presult-msg').textContent=ok?'Correct!':my==null?'Too Slow!':'Wrong!';
+  const showFakeWrong = forceFakeResultOnce;
+  forceFakeResultOnce = false;
+  const shownCorrect = ok && !showFakeWrong;
+  document.getElementById('presult-circle').innerHTML=shownCorrect?SVG_CIRCLE_CHECK:SVG_CIRCLE_X;
+  document.getElementById('presult-msg').textContent=shownCorrect?'Correct!':my==null?'Too Slow!':'Wrong!';
   document.getElementById('presult-rank').textContent=`You are top ${rank}${aheadName?`, behind ${aheadName}`:''}`;
   const ptsEl=document.getElementById('presult-pts');
   if(ok){ptsEl.style.display='block';ptsEl.textContent=`+${earned}`;}else ptsEl.style.display='none';
   document.getElementById('presult-total').textContent=G.score;
   document.getElementById('presult-uname').textContent=G.pname;
-  if(ok)confetti(2200);
+  if(shownCorrect)confetti(2200);
   go('s-presult');
   stopPoll();
   G.stop=poll(`games/${G.pin}`,game=>{
