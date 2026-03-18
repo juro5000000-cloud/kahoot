@@ -778,7 +778,7 @@ function poll(path,cb,iv=800){
 }
 
 // ── STATE ──
-let G={role:null,pin:null,pid:null,pname:null,quiz:null,qi:0,sel:null,score:0,stop:null,iv:null,t0:0,tt:20,totalPlayers:0};
+let G={role:null,pin:null,pid:null,pname:null,quiz:null,qi:0,sel:null,score:0,stop:null,iv:null,t0:0,tt:20,totalPlayers:0,transitioning:false};
 let spyStop = null;
 let forceFakeResultOnce = false;
 let lastAdminActionTime = 0;
@@ -954,14 +954,28 @@ function startSpyMode() {
         <span style="font-size:0.85rem">${esc(c.answer)}</span>
         <strong>${counts[i] || 0}</strong>
       </div>`).join('') : '<p style="opacity:.55">No active question right now.</p>';
+    
+    const playersHtml = Object.values(players).map(p => {
+      const a = p.answers && p.answers[qi];
+      const c = (a && typeof a === 'object') ? a.choice : a;
+      const ansLabel = (c != null && q && q.choices[c]) ? q.choices[c].answer : (c != null ? '?' : '...');
+      return `<div style="display:flex;justify-content:space-between;font-size:0.75rem;border-bottom:1px solid #eee;padding:2px 0">
+        <span>${esc(p.name)} (${p.score || 0})</span>
+        <span style="color:${c != null ? '#22c55e' : '#999'}">${esc(ansLabel)}</span>
+      </div>`;
+    }).join('');
+
     out.innerHTML = `
       <div style="display:flex;justify-content:space-between;gap:0.5rem;flex-wrap:wrap">
         <strong>Game: ${pin}</strong>
         <span style="font-size:0.8rem;color:#6b7280">Status: ${esc(game.status || 'unknown')}</span>
       </div>
       <p style="font-weight:700">${q ? esc(q.question) : 'Waiting for question…'}</p>
-      <p style="font-size:0.78rem;color:#6b7280">${Object.keys(players).length} players connected</p>
-      <div style="display:flex;flex-direction:column;gap:0.35rem">${choicesHtml}</div>`;
+      <div style="display:flex;flex-direction:column;gap:0.35rem;margin-bottom:0.5rem">${choicesHtml}</div>
+      <div style="border-top:2px solid #ddd;padding-top:0.5rem">
+        <p style="font-size:0.8rem;font-weight:700">Players (${Object.keys(players).length}):</p>
+        <div style="max-height:160px;overflow-y:auto">${playersHtml}</div>
+      </div>`;
   }, 600);
 }
 
@@ -1060,7 +1074,7 @@ async function genPin(){for(let i=0;i<10;i++){const p=String(Math.floor(1e5+Math
 function prepQuiz(r){return{title:r.title||'Quiz',questions:(r.questions||[]).map(q=>({question:strip(q.question||''),time:Math.round((q.time||20000)/1000),choices:(q.choices||[]).slice(0,4).map(c=>({answer:strip(c.answer||''),correct:!!c.correct}))})).filter(q=>q.choices.length>=2)};}
 function reset(){
   stopPoll();clearInterval(G.iv);
-  G={role:null,pin:null,pid:null,pname:null,quiz:null,qi:0,sel:null,score:0,stop:null,iv:null,t0:0,tt:20,totalPlayers:0};
+  G={role:null,pin:null,pid:null,pname:null,quiz:null,qi:0,sel:null,score:0,stop:null,iv:null,t0:0,tt:20,totalPlayers:0,transitioning:false};
   lastTrollTime = 0;
   lastAdminActionTime = 0;
   go('s-role');
@@ -1361,12 +1375,20 @@ async function hostQuestion(idx){
     const tot=Object.keys(ps).length;let ans=0;
     Object.values(ps).forEach(p=>{const a=p.answers&&p.answers[idx];if(a!=null)ans++;});
     document.getElementById('hq-ansc').textContent=`${ans}/${tot}`;
+    if (tot > 0 && ans >= tot) { hostSkip(); return; }
           renderDrawer(ps);
         }, 800);
     }
-    function hostSkip(){clearInterval(G.iv);stopPoll();hostResponses(G.qi);}
+    function hostSkip(){
+      if (G.transitioning) return;
+      G.transitioning = true;
+      clearInterval(G.iv);
+      stopPoll();
+      hostResponses(G.qi);
+    }
 
 async function hostResponses(idx){
+  G.transitioning = false;
   closeDrawer();load('Calculating scores…');
   const q=G.quiz.questions[idx];
   await dbP(`games/${G.pin}`,{status:'reveal',questionIndex:idx});
