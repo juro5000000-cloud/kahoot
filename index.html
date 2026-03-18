@@ -113,31 +113,107 @@ canvas#cfx{position:fixed;inset:0;pointer-events:none;z-index:9997}
 .lb-row{display:flex;justify-content:space-between;align-items:center;border-radius:6px;background:var(--primary);padding:.75rem 1rem;font-size:1.4rem;font-weight:700;color:#fff;box-shadow:rgba(0,0,0,.25) 0 -4px inset;animation:slideUp .4s ease both}
 /* ── Result circles ── */
 .result-circle{display:flex;align-items:center;justify-content:center;width:100%;max-height:15rem;aspect-square;margin:0 auto}
-/* ── Skins ── */
-:root{--ans-r:#ef4444;--ans-b:#3b82f6;--ans-y:#eab308;--ans-g:#22c55e;--sk-radius:4px}
-body.skin-neon{--ans-r:#0d0009;--ans-b:#00060d;--ans-y:#0c0b00;--ans-g:#00100a}
-body.skin-neon .ans-btn.r{border:2px solid #ff003c!important;box-shadow:0 0 18px rgba(255,0,60,.45) inset!important}
-body.skin-neon .ans-btn.b{border:2px solid #00aaff!important;box-shadow:0 0 18px rgba(0,170,255,.45) inset!important}
-body.skin-neon .ans-btn.y{border:2px solid #ffe600!important;box-shadow:0 0 18px rgba(255,230,0,.45) inset!important}
-body.skin-neon .ans-btn.g{border:2px solid #00ff66!important;box-shadow:0 0 18px rgba(0,255,102,.45) inset!important}
-body.skin-ocean{--ans-r:#9b2d35;--ans-b:#0077b6;--ans-y:#9b5c10;--ans-g:#1a7a40;--sk-radius:50px}
-body.skin-inferno{--ans-r:#5c0000;--ans-b:#892a00;--ans-y:#7a4500;--ans-g:#5c0a00}
-body.skin-forest{--ans-r:#601020;--ans-b:#0d4520;--ans-y:#5a4200;--ans-g:#185018;--sk-radius:16px}
-.ans-btn.r{background:var(--ans-r)}
-.ans-btn.b{background:var(--ans-b)}
-.ans-btn.y{background:var(--ans-y)}
-.ans-btn.g{background:var(--ans-g)}
-.ans-btn{border-radius:var(--sk-radius,4px)}
-/* skin picker in lobby — host side (keep .sk for compat) */
-.sk{display:flex;align-items:center;gap:.6rem;padding:.55rem .8rem;border-radius:8px;cursor:pointer;border:2px solid rgba(255,255,255,.1);background:rgba(255,255,255,.07);transition:.15s}
-.sk:hover{background:rgba(255,255,255,.15)}
-.sk.on{border-color:var(--primary);background:rgba(255,153,0,.15)}
-.sk-swatch{width:26px;height:26px;border-radius:6px;flex-shrink:0}
-.sk-name{font-weight:700;font-size:.82rem;color:#fff;flex:1}
-/* Player skin picker */
-.pskin-opt{display:flex;align-items:center;gap:.7rem;padding:.6rem .8rem;border-radius:10px;cursor:pointer;border:2px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);transition:all .15s}
-.pskin-opt:hover{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.25)}
-.pskin-opt.on{border-color:var(--primary);background:rgba(255,153,0,.18);box-shadow:0 0 12px rgba(255,153,0,.25)}
+
+/* ── Admin Panel ── */
+#admin-panel {
+  position: fixed;
+  top: 0;
+  right: -320px;
+  width: 320px;
+  height: 100dvh;
+  background: rgba(10,10,10,0.97);
+  border-left: 2px solid #FFD700;
+  z-index: 10000;
+  transition: right 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  color: #fff;
+  padding: 1.5rem;
+  box-shadow: -5px 0 15px rgba(0,0,0,0.5);
+}
+#admin-panel.on { right: 0; }
+.admin-toggle {
+  position: fixed;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%) rotate(-90deg);
+  transform-origin: right center;
+  background: #FFD700;
+  color: #000;
+  padding: 0.4rem 1rem;
+  font-weight: 800;
+  font-size: 0.75rem;
+  cursor: pointer;
+  border-radius: 6px 6px 0 0;
+  z-index: 9999;
+  display: none;
+  letter-spacing: 1px;
+}
+.admin-close {
+  align-self: flex-end;
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 1.5rem;
+  cursor: pointer;
+  margin-bottom: 1rem;
+}
+.admin-sec {
+  margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+.admin-sec h3 {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: #FFD700;
+  border-bottom: 1px solid rgba(255,215,0,0.2);
+  padding-bottom: 0.4rem;
+}
+.admin-card {
+  background: rgba(255,255,255,0.05);
+  padding: 0.8rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.admin-btn {
+  background: #FFD700;
+  color: #000;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+.admin-btn.red { background: #ef4444; color: #fff; }
+.admin-btn.small { padding: 0.2rem 0.5rem; font-size: 0.7rem; }
+.admin-input {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,215,0,0.3);
+  color: #fff;
+  padding: 0.5rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+#admin-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.8);
+  z-index: 10001;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 1rem;
+}
+#admin-overlay.on { display: flex; }
+
 /* ── Players in lobby ── */
 .pl-chip{display:inline-flex;align-items:center;gap:.4rem;background:var(--primary);border-radius:6px;padding:.5rem 1rem;font-weight:700;font-size:1.2rem;color:#fff;box-shadow:rgba(0,0,0,.25) 0 -4px inset;cursor:pointer;transition:filter .15s;animation:popScale .25s ease}
 .pl-chip:hover{filter:brightness(1.1)}
@@ -282,7 +358,6 @@ body.skin-forest{--ans-r:#601020;--ans-b:#0d4520;--ans-y:#5a4200;--ans-g:#185018
           <div class="stat-pill"><span>Answers</span><span id="hq-ansc">0/0</span></div>
         </div>
         <div style="display:flex;align-items:center;gap:.5rem">
-          <span id="hq-skin-badge" style="font-size:.72rem;color:rgba(255,255,255,.35);font-weight:600"></span>
           <button class="btn-rh" onclick="toggleDrawer()" style="padding:.3rem .8rem;font-size:.75rem;border-radius:20px"><span>👥</span></button>
         </div>
       </div>
@@ -356,11 +431,46 @@ body.skin-forest{--ans-r:#601020;--ans-b:#0d4520;--ans-y:#5a4200;--ans-g:#185018
   <div class="rh-layer" style="align-items:center;justify-content:center;flex-direction:column;gap:1.5rem;padding:2rem">
     <div class="spin"></div>
     <h2 id="pwait-txt" style="text-align:center;font-size:clamp(1.5rem,4vw,3rem);font-weight:700;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.5);padding:0 1rem">Waiting for host</h2>
-    <!-- Player skin picker -->
-    <div style="margin-top:.5rem;background:rgba(0,0,0,.35);border-radius:12px;padding:1rem 1.4rem;max-width:420px;width:100%">
-      <p style="color:rgba(255,255,255,.45);font-size:.68rem;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;margin-bottom:.75rem;text-align:center">🎨 Choose your skin</p>
-      <div id="player-skin-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem"></div>
+  </div>
+</div>
+
+<!-- ADMIN SIDE PANEL -->
+<div id="admin-toggle" class="admin-toggle" onclick="openAdminPanel()">ADMIN</div>
+<div id="admin-panel">
+  <button class="admin-close" onclick="closeAdminPanel()">✕</button>
+  <div style="flex:1;overflow-y:auto;padding-right:0.5rem">
+    <div class="admin-sec">
+      <h3>Active Games</h3>
+      <button class="admin-btn" onclick="adminRefreshGames()">🔄 Refresh</button>
+      <div id="admin-games-list" style="display:flex;flex-direction:column;gap:0.8rem;margin-top:0.5rem"></div>
     </div>
+    <div class="admin-sec">
+      <h3>Banned Players</h3>
+      <div style="display:flex;gap:0.5rem">
+        <input id="admin-ban-inp" class="admin-input" placeholder="Name..." style="flex:1">
+        <button class="admin-btn" onclick="adminBanPlayer()">Ban</button>
+      </div>
+      <div id="admin-bans-list" style="display:flex;flex-direction:column;gap:0.5rem;margin-top:0.5rem"></div>
+    </div>
+    <div class="admin-sec">
+      <h3>Stats</h3>
+      <div style="display:flex;flex-direction:column;gap:0.4rem;font-size:0.9rem">
+        <p>Active Games: <span id="admin-stat-active">0</span></p>
+        <p>Banned Players: <span id="admin-stat-banned">0</span></p>
+      </div>
+      <button class="admin-btn red" onclick="adminClearFinished()" style="margin-top:0.5rem">🗑️ Clear Finished Games</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN PASSWORD OVERLAY -->
+<div id="admin-overlay">
+  <div class="rh-form" style="max-width:300px">
+    <h2 style="text-align:center;color:#000;font-size:1.2rem;font-weight:800">Admin Login</h2>
+    <input type="password" id="admin-pw" class="rh-input" placeholder="Password" style="text-align:center">
+    <p id="admin-err" style="color:#ef4444;font-size:0.8rem;font-weight:700;text-align:center;display:none">Incorrect password</p>
+    <button class="btn-rh" onclick="adminAuth()">Login</button>
+    <button onclick="closeAdminOverlay()" style="background:none;border:none;color:#888;font-size:.82rem;cursor:pointer;font-weight:600;align-self:center">Cancel</button>
   </div>
 </div>
 
@@ -512,38 +622,10 @@ const SVG_CIRCLE_CHECK = `<svg class="circle-check" viewBox="0 0 512 512" fill="
 // CircleX SVG
 const SVG_CIRCLE_X = `<svg class="circle-x" viewBox="0 0 512 512" fill="#ef4444" xmlns="http://www.w3.org/2000/svg"><circle cx="256" cy="256" r="250"/><line x1="160" y1="160" x2="352" y2="352" stroke="#fff" stroke-width="44" stroke-linecap="round"/><line x1="352" y1="160" x2="160" y2="352" stroke="#fff" stroke-width="44" stroke-linecap="round"/></svg>`;
 
-// ═══ SKINS ═══
-const SKINS = {
-  classic:{ name:'Classic',     emoji:'🎯', cls:'',            swatch:'linear-gradient(135deg,#ef4444,#3b82f6,#eab308,#22c55e)', desc:'Original Kahoot colors' },
-  neon:   { name:'Neon Arcade', emoji:'🕹️', cls:'skin-neon',   swatch:'linear-gradient(135deg,#ff003c,#00ffea)',                  desc:'Glowing neon glow' },
-  ocean:  { name:'Ocean',       emoji:'🌊', cls:'skin-ocean',  swatch:'linear-gradient(135deg,#0077b6,#7eddf9)',                  desc:'Deep sea vibes' },
-  inferno:{ name:'Inferno',     emoji:'🔥', cls:'skin-inferno',swatch:'linear-gradient(135deg,#d93600,#ff9500)',                  desc:'Fire & heat' },
-  forest: { name:'Forest',      emoji:'🌿', cls:'skin-forest', swatch:'linear-gradient(135deg,#1d6632,#6fcf8a)',                  desc:'Into the woods' },
-};
-let curSkin = 'classic';
+// ── CONFETTI ──
+function confetti(dur=3e3,customCols=null){const c=document.getElementById('cfx');c.width=innerWidth;c.height=innerHeight;const ctx=c.getContext('2d'),cols=customCols||['#ff9900','#ef4444','#3b82f6','#eab308','#22c55e','#a855f7'];const ps=Array.from({length:160},()=>({x:Math.random()*c.width,y:Math.random()*c.height-c.height,w:6+Math.random()*7,h:4+Math.random()*6,col:cols[Math.floor(Math.random()*cols.length)],vx:(Math.random()-.5)*6,vy:3+Math.random()*5,r:Math.random()*360,rv:(Math.random()-.5)*10,op:1}));const s=Date.now();(function draw(){const el=(Date.now()-s)/dur;ctx.clearRect(0,0,c.width,c.height);let ok=false;ps.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.r+=p.rv;p.vy+=.12;p.op=Math.max(0,1-el*1.4);if(p.y<c.height+20)ok=true;ctx.save();ctx.globalAlpha=p.op;ctx.translate(p.x+p.w/2,p.y+p.h/2);ctx.rotate(p.r*Math.PI/180);ctx.fillStyle=p.col;ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);ctx.restore();});if(ok&&(Date.now()-s)<dur*2)requestAnimationFrame(draw);else ctx.clearRect(0,0,c.width,c.height);})();}
 
-// Skins are player-only — the host view is always the plain Rahoot style
-function setSkin(k) {
-  curSkin = k;
-  Object.values(SKINS).forEach(s => { if(s.cls) document.body.classList.remove(s.cls); });
-  if(SKINS[k].cls) document.body.classList.add(SKINS[k].cls);
-  document.querySelectorAll('.pskin-opt').forEach(el => el.classList.toggle('on', el.dataset.k === k));
-}
-
-function buildPlayerSkinGrid() {
-  const el = document.getElementById('player-skin-grid');
-  if(!el) return;
-  el.innerHTML = Object.entries(SKINS).map(([k,s]) => `
-    <div class="pskin-opt${k===curSkin?' on':''}" data-k="${k}" onclick="setSkin('${k}')">
-      <div style="width:30px;height:30px;border-radius:7px;flex-shrink:0;background:${s.swatch}"></div>
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:700;font-size:.8rem;color:#fff">${s.emoji} ${s.name}</div>
-        <div style="font-size:.65rem;color:rgba(255,255,255,.35);font-weight:500">${s.desc}</div>
-      </div>
-    </div>`).join('');
-}
-
-// ═══ FIREBASE ═══
+// ── FIREBASE ──
 const DB='https://kahoot-24296-default-rtdb.europe-west1.firebasedatabase.app';
 const PX='https://api.cors.syrins.tech/?url=';
 const dbG=async p=>(await fetch(`${DB}/${p}.json`)).json();
@@ -552,14 +634,106 @@ const dbP=async(p,d)=>(await fetch(`${DB}/${p}.json`,{method:'PATCH',headers:{'C
 const dbPush=async(p,d)=>(await fetch(`${DB}/${p}.json`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)})).json();
 const dbM=async u=>(await fetch(`${DB}/.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(u)})).json();
 
-function poll(path,cb,iv=700){
+function poll(path,cb,iv=1500){
   let on=true,last=null;
-  const r=async()=>{if(!on)return;try{const d=await dbG(path);const s=JSON.stringify(d);if(s!==last){last=s;cb(d);}}catch(e){}if(on)setTimeout(r,iv);};
+  const r=async()=>{
+    if(!on)return;
+    try{
+      const d=await dbG(path);
+      const s=JSON.stringify(d);
+      if(s!==last){last=s;cb(d);}
+    }catch(e){
+      if(on)setTimeout(r,3000);
+      return;
+    }
+    if(on)setTimeout(r,iv);
+  };
   r();return()=>{on=false;};
 }
 
-// ═══ STATE ═══
+// ── STATE ──
 let G={role:null,pin:null,pid:null,pname:null,quiz:null,qi:0,sel:null,score:0,stop:null,iv:null,t0:0,tt:20,totalPlayers:0};
+
+// ── ADMIN SYSTEM ──
+let adminSeq = '';
+const ADMIN_PASS = 'admin123';
+window.addEventListener('keydown', e => {
+  adminSeq = (adminSeq + e.key.toUpperCase()).slice(-4);
+  if (adminSeq === 'GOLD') {
+    adminSeq = '';
+    confetti(4000, ['#FFD700', '#FFA500', '#FFEC00']);
+    openAdminOverlay();
+  }
+});
+
+function openAdminOverlay() {
+  document.getElementById('admin-pw').value = '';
+  document.getElementById('admin-err').style.display = 'none';
+  document.getElementById('admin-overlay').classList.add('on');
+  setTimeout(() => document.getElementById('admin-pw').focus(), 100);
+}
+function closeAdminOverlay() { document.getElementById('admin-overlay').classList.remove('on'); }
+function adminAuth() {
+  if (document.getElementById('admin-pw').value === ADMIN_PASS) {
+    closeAdminOverlay();
+    document.getElementById('admin-toggle').style.display = 'block';
+    openAdminPanel();
+  } else {
+    document.getElementById('admin-err').style.display = 'block';
+  }
+}
+function openAdminPanel() { document.getElementById('admin-panel').classList.add('on'); adminRefreshGames(); adminRefreshBans(); }
+function closeAdminPanel() { document.getElementById('admin-panel').classList.remove('on'); }
+
+async function adminRefreshGames() {
+  const games = await dbG('games') || {};
+  const list = document.getElementById('admin-games-list');
+  const active = Object.entries(games).filter(([, g]) => g.status !== 'finished');
+  document.getElementById('admin-stat-active').textContent = active.length;
+  list.innerHTML = active.map(([pin, g]) => `
+    <div class="admin-card">
+      <div style="display:flex;justify-content:space-between;font-weight:700">
+        <span>PIN: ${pin}</span>
+        <span style="color:#FFD700">${g.status}</span>
+      </div>
+      <div style="opacity:0.8">${esc(g.title)}</div>
+      <div style="font-size:0.75rem">Players: ${Object.keys(g.players || {}).length}</div>
+      <button class="admin-btn red small" onclick="adminForceEnd('${pin}')">⛔ Force End</button>
+    </div>`).join('') || '<p style="opacity:0.5;text-align:center">No active games</p>';
+}
+
+async function adminForceEnd(pin) { if (confirm('Force end game ' + pin + '?')) { await dbP(`games/${pin}`, { status: 'finished' }); adminRefreshGames(); } }
+
+async function adminRefreshBans() {
+  const bans = await dbG('admin/bans') || {};
+  const list = document.getElementById('admin-bans-list');
+  const entries = Object.entries(bans);
+  document.getElementById('admin-stat-banned').textContent = entries.length;
+  list.innerHTML = entries.map(([id, name]) => `
+    <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.05);padding:0.4rem 0.6rem;border-radius:4px;font-size:0.85rem">
+      <span>${esc(name)}</span>
+      <button class="admin-btn red small" onclick="adminRemoveBan('${id}')">Remove</button>
+    </div>`).join('') || '<p style="opacity:0.5;text-align:center">No bans</p>';
+}
+
+async function adminBanPlayer() {
+  const name = document.getElementById('admin-ban-inp').value.trim();
+  if (!name) return;
+  await dbPush('admin/bans', name);
+  document.getElementById('admin-ban-inp').value = '';
+  adminRefreshBans();
+}
+
+async function adminRemoveBan(id) { await dbS(`admin/bans/${id}`, null); adminRefreshBans(); }
+
+async function adminClearFinished() {
+  if (confirm('Delete all finished games from Firebase?')) {
+    const games = await dbG('games') || {};
+    const updates = {};
+    Object.entries(games).forEach(([pin, g]) => { if (g.status === 'finished') updates[`games/${pin}`] = null; });
+    if (Object.keys(updates).length) { await dbM(updates); adminRefreshGames(); toast('Cleared finished games'); }
+  }
+}
 
 function esc(s){if(!s)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
 function strip(s){if(!s)return'';const d=document.createElement('div');d.innerHTML=s;return d.textContent||'';}
@@ -573,8 +747,6 @@ async function genPin(){for(let i=0;i<10;i++){const p=String(Math.floor(1e5+Math
 function prepQuiz(r){return{title:r.title||'Quiz',questions:(r.questions||[]).slice(0,20).map(q=>({question:strip(q.question||''),time:Math.round((q.time||20000)/1000),choices:(q.choices||[]).slice(0,4).map(c=>({answer:strip(c.answer||''),correct:!!c.correct}))})).filter(q=>q.choices.length>=2)};}
 function reset(){
   stopPoll();clearInterval(G.iv);
-  Object.values(SKINS).forEach(s=>{if(s.cls)document.body.classList.remove(s.cls);});
-  curSkin='classic';
   G={role:null,pin:null,pid:null,pname:null,quiz:null,qi:0,sel:null,score:0,stop:null,iv:null,t0:0,tt:20,totalPlayers:0};
   go('s-role');
 }
@@ -591,15 +763,6 @@ function renderLB(players,el,delta=false){
     </div>`;
   }).join('');
 }
-
-// ═══ CONFIRM ═══
-let _cb=null;
-function showConfirm(ico,title,body,cb){document.getElementById('cm-ico').textContent=ico;document.getElementById('cm-title').textContent=title;document.getElementById('cm-body').textContent=body;_cb=cb;document.getElementById('confirm').classList.add('on');}
-function closeConfirm(){document.getElementById('confirm').classList.remove('on');_cb=null;}
-document.getElementById('cm-ok').onclick=()=>{closeConfirm();if(_cb)_cb();};
-
-// ═══ CONFETTI ═══
-function confetti(dur=3e3){const c=document.getElementById('cfx');c.width=innerWidth;c.height=innerHeight;const ctx=c.getContext('2d'),cols=['#ff9900','#ef4444','#3b82f6','#eab308','#22c55e','#a855f7'];const ps=Array.from({length:160},()=>({x:Math.random()*c.width,y:Math.random()*c.height-c.height,w:6+Math.random()*7,h:4+Math.random()*6,col:cols[Math.floor(Math.random()*cols.length)],vx:(Math.random()-.5)*6,vy:3+Math.random()*5,r:Math.random()*360,rv:(Math.random()-.5)*10,op:1}));const s=Date.now();(function draw(){const el=(Date.now()-s)/dur;ctx.clearRect(0,0,c.width,c.height);let ok=false;ps.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.r+=p.rv;p.vy+=.12;p.op=Math.max(0,1-el*1.4);if(p.y<c.height+20)ok=true;ctx.save();ctx.globalAlpha=p.op;ctx.translate(p.x+p.w/2,p.y+p.h/2);ctx.rotate(p.r*Math.PI/180);ctx.fillStyle=p.col;ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);ctx.restore();});if(ok&&(Date.now()-s)<dur*2)requestAnimationFrame(draw);else ctx.clearRect(0,0,c.width,c.height);})();}
 
 // ═══ COUNTDOWN (Rahoot spinning square) ═══
 function countdown(n=3){
@@ -734,7 +897,7 @@ async function hostPrepared(idx){
     </div>`).join('');
   go('s-hprepared');
   // Auto-advance after cooldown
-  G.stop=null;
+  stopPoll();
   setTimeout(()=>hostQuestion(idx),5e3);
 }
 
@@ -760,7 +923,7 @@ async function hostQuestion(idx){
     Object.values(ps||{}).forEach(p=>{const a=p.answers&&p.answers[idx];if(a!=null)ans++;});
     document.getElementById('hq-ansc').textContent=`${ans}/${tot}`;
     renderDrawer(ps);
-  },500);
+  },1500);
 }
 
 function hostSkip(){clearInterval(G.iv);stopPoll();hostResponses(G.qi);}
@@ -895,16 +1058,16 @@ async function playerJoin(){
   if(name.length<2){err.textContent='Username too short';return;}
   btn.disabled=true;btn.querySelector('span').textContent='Joining…';
   try{
+    const bans = await dbG('admin/bans') || {};
+    if (Object.values(bans).includes(name)) throw new Error('You are banned from this game');
     const game=await dbG(`games/${pin}`);
     if(!game)throw new Error('Game not found — check the PIN.');
     if(game.status==='finished')throw new Error('This game has already ended.');
     if(game.status!=='lobby'&&game.status!=='prepared')throw new Error('Game has already started. Ask the host for a new PIN.');
-    if(game.skin)setSkin(game.skin,false);
     const res=await dbPush(`games/${pin}/players`,{name,score:0,lastEarned:0,answers:{}});
     G.pin=pin;G.pname=name;G.pid=res.name;G.quiz={questions:game.questions,title:game.title};G.score=0;
     ['pprepared-uname','pq-uname','pans-uname','presult-uname'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=name;});
     document.getElementById('pwait-txt').textContent='Waiting for host';
-    buildPlayerSkinGrid();
     go('s-pwait');watchGame();
   }catch(e){err.textContent=e.message;}
   finally{btn.disabled=false;btn.querySelector('span').textContent='Submit';}
@@ -913,7 +1076,7 @@ async function playerJoin(){
 function watchGame(){
   stopPoll();let last=null;
   G.stop=poll(`games/${G.pin}`,game=>{
-    if(!game)return;
+    if(!game || game.status === 'finished'){stopPoll(); playerFinal(); return;}
     const me=game.players&&game.players[G.pid];
     if(me&&me.kicked){stopPoll();clearInterval(G.iv);go('s-kicked');return;}
     const{status,questionIndex:qi,questionStartTime:qs}=game;
@@ -921,7 +1084,7 @@ function watchGame(){
     if(status==='prepared'&&qi>=0){stopPoll();G.quiz.questions=game.questions;playerPrepared(qi);}
     if(status==='question'&&qi>=0){stopPoll();G.quiz.questions=game.questions;playerQuestion(qi,qs);}
     if(status==='final'){stopPoll();playerFinal();}
-  });
+  }, 1500);
 }
 
 function playerPrepared(idx){
@@ -937,13 +1100,12 @@ function playerPrepared(idx){
   go('s-pprepared');
   stopPoll();
   G.stop=poll(`games/${G.pin}`,game=>{
-    if(!game)return;
+    if(!game || game.status === 'finished'){stopPoll(); playerFinal(); return;}
     const me=game.players&&game.players[G.pid];
     if(me&&me.kicked){stopPoll();go('s-kicked');return;}
-    if(game.skin)setSkin(game.skin,false);
     if(game.status==='question'&&game.questionIndex===idx){stopPoll();playerQuestion(idx,game.questionStartTime);}
     if(game.status==='final'){stopPoll();playerFinal();}
-  });
+  }, 1500);
 }
 
 function playerQuestion(idx,t0){
@@ -968,18 +1130,17 @@ function playerQuestion(idx,t0){
   startTimer(q.time,document.getElementById('pq-time'),document.getElementById('pq-tbar'),()=>{});
   stopPoll();
   G.stop=poll(`games/${G.pin}`,game=>{
-    if(!game)return;
+    if(!game || game.status === 'finished'){stopPoll(); clearInterval(G.iv); playerFinal(); return;}
     const me=game.players&&game.players[G.pid];
     if(me&&me.kicked){stopPoll();clearInterval(G.iv);go('s-kicked');return;}
-    if(game.skin)setSkin(game.skin,false);
     const tot=Object.keys(game.players||{}).length;
-    let ansCnt=0;const mea=me?.answers?.[idx];
+    let ansCnt=0;
     Object.values(game.players||{}).forEach(p=>{const a=p.answers&&p.answers[idx];if(a!=null)ansCnt++;});
     totEl.textContent=`${ansCnt}/${tot}`;
     if(game.status==='reveal'&&game.questionIndex===idx){stopPoll();clearInterval(G.iv);playerReveal(idx,game.questions||G.quiz.questions);}
     if(game.status==='question'&&game.questionIndex>idx){stopPoll();clearInterval(G.iv);playerQuestion(game.questionIndex,game.questionStartTime);}
     if(game.status==='final'){stopPoll();clearInterval(G.iv);playerFinal();}
-  });
+  }, 1500);
 }
 
 async function playerSubmit(idx){
@@ -991,20 +1152,18 @@ async function playerSubmit(idx){
   go('s-panswered');
   stopPoll();
   G.stop=poll(`games/${G.pin}`,game=>{
-    if(!game)return;
+    if(!game || game.status === 'finished'){stopPoll(); playerFinal(); return;}
     const me=game.players&&game.players[G.pid];
     if(me&&me.kicked){stopPoll();go('s-kicked');return;}
-    if(game.skin)setSkin(game.skin,false);
     if(game.status==='reveal'&&game.questionIndex===G.qi){stopPoll();playerReveal(G.qi,game.questions||G.quiz.questions);}
     if(game.status==='question'&&game.questionIndex>G.qi){stopPoll();clearInterval(G.iv);playerQuestion(game.questionIndex,game.questionStartTime);}
     if(game.status==='final'){stopPoll();playerFinal();}
-  });
+  }, 1500);
 }
 
 async function playerReveal(idx,questions){
   const q=(questions||G.quiz.questions)[idx];
   const my=G.sel;const ok=my!=null&&q.choices[my]?.correct;
-  const ca=q.choices.find(c=>c.correct)?.answer||'—';
   let earned=0;
   if(ok){const el=Date.now()-G.t0;earned=calcScore(el,(q.time||20)*1e3);G.score+=earned;try{await dbS(`games/${G.pin}/players/${G.pid}/score`,G.score);}catch(e){}}
   // Get rank
@@ -1026,14 +1185,13 @@ async function playerReveal(idx,questions){
   go('s-presult');
   stopPoll();
   G.stop=poll(`games/${G.pin}`,game=>{
-    if(!game)return;
+    if(!game || game.status === 'finished'){stopPoll(); playerFinal(); return;}
     const me=game.players&&game.players[G.pid];
     if(me&&me.kicked){stopPoll();go('s-kicked');return;}
-    if(game.skin)setSkin(game.skin,false);
     if(game.status==='prepared'&&game.questionIndex>idx){stopPoll();playerPrepared(game.questionIndex);}
     if(game.status==='question'&&game.questionIndex>idx){stopPoll();playerQuestion(game.questionIndex,game.questionStartTime);}
     if(game.status==='final'){stopPoll();playerFinal();}
-  });
+  }, 1500);
 }
 
 async function playerFinal(){
