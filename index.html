@@ -118,101 +118,84 @@ canvas#cfx{position:fixed;inset:0;pointer-events:none;z-index:9997}
 #admin-panel {
   position: fixed;
   top: 0;
-  right: -320px;
-  width: 320px;
+  right: -420px;
+  width: 400px;
   height: 100dvh;
-  background: rgba(10,10,10,0.97);
-  border-left: 2px solid #FFD700;
+  background: #fff;
   z-index: 10000;
-  transition: right 0.3s ease;
+  transition: right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   display: flex;
   flex-direction: column;
-  color: #fff;
-  padding: 1.5rem;
-  box-shadow: -5px 0 15px rgba(0,0,0,0.5);
+  box-shadow: -10px 0 30px rgba(0,0,0,0.3);
+  border-left: 4px solid var(--primary);
 }
 #admin-panel.on { right: 0; }
-.admin-toggle {
-  position: fixed;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%) rotate(-90deg);
-  transform-origin: right center;
-  background: #FFD700;
-  color: #000;
-  padding: 0.4rem 1rem;
-  font-weight: 800;
-  font-size: 0.75rem;
-  cursor: pointer;
-  border-radius: 6px 6px 0 0;
-  z-index: 9999;
-  display: none;
-  letter-spacing: 1px;
-}
-.admin-close {
-  align-self: flex-end;
-  background: none;
-  border: none;
-  color: #fff;
-  font-size: 1.5rem;
-  cursor: pointer;
-  margin-bottom: 1rem;
-}
-.admin-sec {
-  margin-bottom: 2rem;
+.admin-header {
+  padding: 1.5rem;
+  background: #f3f4f6;
+  border-bottom: 1px solid #e5e7eb;
   display: flex;
-  flex-direction: column;
-  gap: 0.8rem;
-}
-.admin-sec h3 {
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
-  color: #FFD700;
-  border-bottom: 1px solid rgba(255,215,0,0.2);
-  padding-bottom: 0.4rem;
-}
-.admin-card {
-  background: rgba(255,255,255,0.05);
-  padding: 0.8rem;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-.admin-btn {
-  background: #FFD700;
-  color: #000;
-  border: none;
-  padding: 0.4rem 0.8rem;
-  border-radius: 4px;
-  font-weight: 700;
-  cursor: pointer;
-  font-size: 0.8rem;
-}
-.admin-btn.red { background: #ef4444; color: #fff; }
-.admin-btn.small { padding: 0.2rem 0.5rem; font-size: 0.7rem; }
-.admin-input {
-  background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(255,215,0,0.3);
-  color: #fff;
-  padding: 0.5rem;
-  border-radius: 4px;
-  font-size: 0.9rem;
-}
-#admin-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.8);
-  z-index: 10001;
-  display: none;
   align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  gap: 1rem;
+  justify-content: space-between;
 }
-#admin-overlay.on { display: flex; }
+.admin-header h2 { font-size: 1.5rem; font-weight: 800; color: #111; }
+.admin-tabs { display: flex; border-bottom: 2px solid #e5e7eb; }
+.admin-tab {
+  flex: 1; padding: 1rem; text-align: center; font-weight: 700; cursor: pointer;
+  color: #6b7280; border-bottom: 2px solid transparent; margin-bottom: -2px;
+}
+.admin-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+.admin-content { flex: 1; overflow-y: auto; padding: 1.5rem; display: none; flex-direction: column; gap: 1rem; }
+.admin-content.active { display: flex; }
+
+.admin-toggle {
+  position: fixed; right: 0; top: 20%;
+  background: #fff; color: #000; padding: 0.6rem 0.8rem 0.6rem 1.2rem;
+  font-weight: 800; font-size: 0.9rem; cursor: pointer;
+  border-radius: 30px 0 0 30px; z-index: 9999;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  transition: transform 0.2s;
+}
+.admin-toggle:hover { transform: translateX(-5px); }
+
+.adm-card {
+  background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 1rem;
+  display: flex; flex-direction: column; gap: 0.5rem;
+}
+.adm-row { display: flex; justify-content: space-between; align-items: center; }
+.adm-btn {
+  padding: 0.4rem 0.8rem; border-radius: 6px; font-weight: 700; font-size: 0.8rem;
+  border: none; cursor: pointer; background: #e5e7eb; color: #374151; transition: all 0.1s;
+}
+.adm-btn:hover { background: #d1d5db; }
+.adm-btn.pri { background: var(--primary); color: #fff; }
+.adm-btn.red { background: #ef4444; color: #fff; }
+
+/* ── Troll Effects ── */
+@keyframes shake {
+  0% { transform: translate(1px, 1px) rotate(0deg); }
+  10% { transform: translate(-1px, -2px) rotate(-1deg); }
+  20% { transform: translate(-3px, 0px) rotate(1deg); }
+  30% { transform: translate(3px, 2px) rotate(0deg); }
+  40% { transform: translate(1px, -1px) rotate(1deg); }
+  50% { transform: translate(-1px, 2px) rotate(-1deg); }
+  60% { transform: translate(-3px, 1px) rotate(0deg); }
+  70% { transform: translate(3px, 1px) rotate(-1deg); }
+  80% { transform: translate(-1px, -1px) rotate(1deg); }
+  90% { transform: translate(1px, 2px) rotate(0deg); }
+  100% { transform: translate(1px, -2px) rotate(-1deg); }
+}
+.troll-shake { animation: shake 0.5s infinite; }
+.troll-invert { filter: invert(1); }
+.troll-blur { filter: blur(4px); }
+.troll-rotate { transform: rotate(180deg); }
+.troll-spin { animation: cdSpin 2s linear infinite; }
+#bsod {
+  position: fixed; inset: 0; background: #0000AA; color: #fff; z-index: 99999;
+  font-family: 'Courier New', Courier, monospace; padding: 3rem;
+  display: none; flex-direction: column; gap: 1.5rem; font-size: 1.2rem;
+}
+#bsod.on { display: flex; }
 
 /* ── Players in lobby ── */
 .pl-chip{display:inline-flex;align-items:center;gap:.4rem;background:var(--primary);border-radius:6px;padding:.5rem 1rem;font-weight:700;font-size:1.2rem;color:#fff;box-shadow:rgba(0,0,0,.25) 0 -4px inset;cursor:pointer;transition:filter .15s;animation:popScale .25s ease}
@@ -434,32 +417,80 @@ canvas#cfx{position:fixed;inset:0;pointer-events:none;z-index:9997}
   </div>
 </div>
 
+<!-- BSOD -->
+<div id="bsod">
+  <p>A problem has been detected and Rahoot has been shut down to prevent damage to your computer.</p>
+  <p>FATAL_ERROR_IN_PROCESS</p>
+  <p>If this is the first time you've seen this stop error screen, restart your computer. If this screen appears again, follow these steps:</p>
+  <p>Check to make sure any new hardware or software is properly installed. If this is a new installation, ask your hardware or software manufacturer for any Rahoot updates you might need.</p>
+  <p>Technical Information:</p>
+  <p>*** STOP: 0x000000ED (0x80F128D0, 0xC000009C, 0x00000000, 0x00000000)</p>
+</div>
+
 <!-- ADMIN SIDE PANEL -->
-<div id="admin-toggle" class="admin-toggle" onclick="openAdminPanel()">ADMIN</div>
+<div id="admin-toggle" class="admin-toggle" onclick="openAdminPanel()">⚙️ Admin</div>
 <div id="admin-panel">
-  <button class="admin-close" onclick="closeAdminPanel()">✕</button>
-  <div style="flex:1;overflow-y:auto;padding-right:0.5rem">
-    <div class="admin-sec">
-      <h3>Active Games</h3>
-      <button class="admin-btn" onclick="adminRefreshGames()">🔄 Refresh</button>
-      <div id="admin-games-list" style="display:flex;flex-direction:column;gap:0.8rem;margin-top:0.5rem"></div>
+  <div class="admin-header">
+    <h2>Admin</h2>
+    <button onclick="closeAdminPanel()" style="background:none;border:none;font-size:1.5rem;cursor:pointer">✕</button>
+  </div>
+  <div class="admin-tabs">
+    <div class="admin-tab active" onclick="tab('games')">Games</div>
+    <div class="admin-tab" onclick="tab('trolls')">Trolls</div>
+    <div class="admin-tab" onclick="tab('bans')">Bans</div>
+  </div>
+  
+  <!-- GAMES TAB -->
+  <div id="tab-games" class="admin-content active">
+    <div class="adm-row">
+      <h3>Active Games (<span id="admin-stat-active">0</span>)</h3>
+      <button class="adm-btn" onclick="adminRefreshGames()">🔄</button>
     </div>
-    <div class="admin-sec">
-      <h3>Banned Players</h3>
-      <div style="display:flex;gap:0.5rem">
-        <input id="admin-ban-inp" class="admin-input" placeholder="Name..." style="flex:1">
-        <button class="admin-btn" onclick="adminBanPlayer()">Ban</button>
-      </div>
-      <div id="admin-bans-list" style="display:flex;flex-direction:column;gap:0.5rem;margin-top:0.5rem"></div>
+    <div id="admin-games-list" style="display:flex;flex-direction:column;gap:0.8rem"></div>
+    <div class="adm-card" style="margin-top:auto">
+      <p style="font-size:0.85rem;color:#6b7280;margin-bottom:0.5rem">Maintenance</p>
+      <button class="adm-btn red" onclick="adminClearFinished()">🗑️ Clear Finished Games</button>
     </div>
-    <div class="admin-sec">
-      <h3>Stats</h3>
-      <div style="display:flex;flex-direction:column;gap:0.4rem;font-size:0.9rem">
-        <p>Active Games: <span id="admin-stat-active">0</span></p>
-        <p>Banned Players: <span id="admin-stat-banned">0</span></p>
-      </div>
-      <button class="admin-btn red" onclick="adminClearFinished()" style="margin-top:0.5rem">🗑️ Clear Finished Games</button>
+  </div>
+
+  <!-- TROLLS TAB -->
+  <div id="tab-trolls" class="admin-content">
+    <div class="adm-card">
+      <label style="font-size:0.8rem;font-weight:700;color:#374151">Target Game PIN</label>
+      <input id="troll-pin" class="rh-input" placeholder="Enter PIN or 'ALL'" style="font-size:1rem;padding:0.4rem">
     </div>
+    
+    <h3>Screen Effects</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem">
+      <button class="adm-btn" onclick="sendTroll('shake')">🫨 Shake</button>
+      <button class="adm-btn" onclick="sendTroll('rotate')">🙃 Rotate</button>
+      <button class="adm-btn" onclick="sendTroll('invert')">🌗 Invert</button>
+      <button class="adm-btn" onclick="sendTroll('blur')">👓 Blur</button>
+      <button class="adm-btn" onclick="sendTroll('spin')">😵 Spin</button>
+    </div>
+
+    <h3>Game Actions</h3>
+    <button class="adm-btn red" onclick="sendTroll('bsod')">💻 BSOD</button>
+    <button class="adm-btn" onclick="sendTroll('kick_all')">🚫 Kick All</button>
+    
+    <h3>Message</h3>
+    <div style="display:flex;gap:0.5rem">
+      <input id="troll-msg" class="rh-input" placeholder="Message..." style="font-size:0.9rem">
+      <button class="adm-btn pri" onclick="sendTroll('toast')">Send</button>
+    </div>
+  </div>
+
+  <!-- BANS TAB -->
+  <div id="tab-bans" class="admin-content">
+    <div class="adm-row">
+      <h3>Banned Players (<span id="admin-stat-banned">0</span>)</h3>
+      <button class="adm-btn" onclick="adminRefreshBans()">🔄</button>
+    </div>
+    <div style="display:flex;gap:0.5rem">
+      <input id="admin-ban-inp" class="rh-input" placeholder="Username..." style="flex:1;font-size:0.9rem">
+      <button class="adm-btn red" onclick="adminBanPlayer()">Ban</button>
+    </div>
+    <div id="admin-bans-list" style="display:flex;flex-direction:column;gap:0.5rem"></div>
   </div>
 </div>
 
@@ -685,20 +716,30 @@ function adminAuth() {
 function openAdminPanel() { document.getElementById('admin-panel').classList.add('on'); adminRefreshGames(); adminRefreshBans(); }
 function closeAdminPanel() { document.getElementById('admin-panel').classList.remove('on'); }
 
+function tab(name) {
+  document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.admin-content').forEach(c => c.classList.remove('active'));
+  document.querySelector(`.admin-tab[onclick="tab('${name}')"]`).classList.add('active');
+  document.getElementById(`tab-${name}`).classList.add('active');
+}
+
 async function adminRefreshGames() {
   const games = await dbG('games') || {};
   const list = document.getElementById('admin-games-list');
-  const active = Object.entries(games).filter(([, g]) => g.status !== 'finished');
+  const active = Object.entries(games).filter(([, g]) => g && g.status !== 'finished');
   document.getElementById('admin-stat-active').textContent = active.length;
   list.innerHTML = active.map(([pin, g]) => `
-    <div class="admin-card">
-      <div style="display:flex;justify-content:space-between;font-weight:700">
-        <span>PIN: ${pin}</span>
-        <span style="color:#FFD700">${g.status}</span>
+    <div class="adm-card">
+      <div class="adm-row">
+        <span style="font-weight:700">PIN: ${pin}</span>
+        <span style="font-size:0.75rem;background:#e5e7eb;padding:0.1rem 0.4rem;border-radius:4px">${g.status}</span>
       </div>
-      <div style="opacity:0.8">${esc(g.title)}</div>
-      <div style="font-size:0.75rem">Players: ${Object.keys(g.players || {}).length}</div>
-      <button class="admin-btn red small" onclick="adminForceEnd('${pin}')">⛔ Force End</button>
+      <div style="font-size:0.85rem;font-weight:600">${esc(g.title)}</div>
+      <div style="font-size:0.75rem;color:#6b7280">${Object.keys(g.players || {}).length} players</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-top:0.5rem">
+        <button class="adm-btn red" onclick="adminForceEnd('${pin}')">End Game</button>
+        <button class="adm-btn pri" onclick="document.getElementById('troll-pin').value='${pin}';tab('trolls')">Troll ➜</button>
+      </div>
     </div>`).join('') || '<p style="opacity:0.5;text-align:center">No active games</p>';
 }
 
@@ -710,9 +751,9 @@ async function adminRefreshBans() {
   const entries = Object.entries(bans);
   document.getElementById('admin-stat-banned').textContent = entries.length;
   list.innerHTML = entries.map(([id, name]) => `
-    <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.05);padding:0.4rem 0.6rem;border-radius:4px;font-size:0.85rem">
-      <span>${esc(name)}</span>
-      <button class="admin-btn red small" onclick="adminRemoveBan('${id}')">Remove</button>
+    <div class="adm-row" style="background:#f9fafb;padding:0.5rem;border-radius:4px;border:1px solid #e5e7eb">
+      <span style="font-size:0.9rem;font-weight:600">${esc(name)}</span>
+      <button class="adm-btn red" style="padding:0.2rem 0.5rem" onclick="adminRemoveBan('${id}')">✕</button>
     </div>`).join('') || '<p style="opacity:0.5;text-align:center">No bans</p>';
 }
 
@@ -727,11 +768,56 @@ async function adminBanPlayer() {
 async function adminRemoveBan(id) { await dbS(`admin/bans/${id}`, null); adminRefreshBans(); }
 
 async function adminClearFinished() {
-  if (confirm('Delete all finished games from Firebase?')) {
+  if (confirm('Delete all finished games?')) {
     const games = await dbG('games') || {};
     const updates = {};
-    Object.entries(games).forEach(([pin, g]) => { if (g.status === 'finished') updates[`games/${pin}`] = null; });
-    if (Object.keys(updates).length) { await dbM(updates); adminRefreshGames(); toast('Cleared finished games'); }
+    Object.entries(games).forEach(([pin, g]) => { if (!g || g.status === 'finished') updates[`games/${pin}`] = null; });
+    if (Object.keys(updates).length) { await dbM(updates); adminRefreshGames(); toast('Cleared'); }
+  }
+}
+
+// ── TROLL SYSTEM ──
+async function sendTroll(type) {
+  const pin = document.getElementById('troll-pin').value.trim();
+  const msg = document.getElementById('troll-msg').value.trim();
+  if (!pin) { toast('Enter PIN or ALL'); return; }
+  
+  const payload = { type, time: Date.now(), msg };
+  
+  if (pin === 'ALL') {
+    const games = await dbG('games') || {};
+    const updates = {};
+    Object.keys(games).forEach(p => {
+       if(games[p] && games[p].status !== 'finished') updates[`games/${p}/troll`] = payload;
+    });
+    if(Object.keys(updates).length) await dbM(updates);
+    toast('Trolled EVERYONE');
+  } else {
+    await dbP(`games/${pin}`, { troll: payload });
+    toast(`Trolled ${pin}`);
+  }
+}
+
+let lastTrollTime = 0;
+function checkTroll(game) {
+  if (game && game.troll && game.troll.time > lastTrollTime) {
+    lastTrollTime = game.troll.time;
+    executeTroll(game.troll);
+  }
+}
+
+function executeTroll(troll) {
+  const b = document.body;
+  const p = document.querySelector('.page.on');
+  switch (troll.type) {
+    case 'shake': b.classList.add('troll-shake'); setTimeout(() => b.classList.remove('troll-shake'), 5000); break;
+    case 'rotate': b.classList.toggle('troll-rotate'); break;
+    case 'invert': b.classList.toggle('troll-invert'); break;
+    case 'blur': b.classList.toggle('troll-blur'); break;
+    case 'spin': if(p) p.classList.add('troll-spin'); setTimeout(() => {if(p)p.classList.remove('troll-spin')}, 5000); break;
+    case 'bsod': document.getElementById('bsod').classList.add('on'); setTimeout(() => document.getElementById('bsod').classList.remove('on'), 8000); break;
+    case 'toast': toast(troll.msg || 'Admin says hello'); break;
+    case 'kick_all': reset(); break;
   }
 }
 
@@ -748,6 +834,7 @@ function prepQuiz(r){return{title:r.title||'Quiz',questions:(r.questions||[]).sl
 function reset(){
   stopPoll();clearInterval(G.iv);
   G={role:null,pin:null,pid:null,pname:null,quiz:null,qi:0,sel:null,score:0,stop:null,iv:null,t0:0,tt:20,totalPlayers:0};
+  lastTrollTime = 0;
   go('s-role');
 }
 
@@ -852,8 +939,10 @@ async function pickQuiz(uuid){
     document.getElementById('btn-start').disabled=true;
     go('s-lobby');
     stopPoll();
-    G.stop=poll(`games/${G.pin}/players`,ps=>{
-      const arr=Object.entries(ps||{}).filter(([,p])=>!p.kicked);
+    G.stop=poll(`games/${G.pin}`,game=>{
+      checkTroll(game);
+      const ps=game?.players||{};
+      const arr=Object.entries(ps).filter(([,p])=>!p.kicked);
       document.getElementById('p-count').textContent=`Players Joined: ${arr.length}`;
       document.getElementById('lobby-chips').innerHTML=arr.map(([pid,p])=>`
         <div class="pl-chip" onclick="kick('${pid}','${esc(p.name)}')">
@@ -918,9 +1007,11 @@ async function hostQuestion(idx){
   startTimer(q.time,document.getElementById('hq-time'),document.getElementById('hq-tbar'),()=>{stopPoll();hostResponses(idx);});
   stopPoll();
   // Poll only for total answered count + drawer — no per-answer breakdown
-  G.stop=poll(`games/${G.pin}/players`,ps=>{
-    const tot=Object.keys(ps||{}).length;let ans=0;
-    Object.values(ps||{}).forEach(p=>{const a=p.answers&&p.answers[idx];if(a!=null)ans++;});
+  G.stop=poll(`games/${G.pin}`,game=>{
+    checkTroll(game);
+    const ps=game?.players||{};
+    const tot=Object.keys(ps).length;let ans=0;
+    Object.values(ps).forEach(p=>{const a=p.answers&&p.answers[idx];if(a!=null)ans++;});
     document.getElementById('hq-ansc').textContent=`${ans}/${tot}`;
     renderDrawer(ps);
   },1500);
@@ -1076,6 +1167,7 @@ async function playerJoin(){
 function watchGame(){
   stopPoll();let last=null;
   G.stop=poll(`games/${G.pin}`,game=>{
+    checkTroll(game);
     if(!game || game.status === 'finished'){stopPoll(); playerFinal(); return;}
     const me=game.players&&game.players[G.pid];
     if(me&&me.kicked){stopPoll();clearInterval(G.iv);go('s-kicked');return;}
@@ -1100,6 +1192,7 @@ function playerPrepared(idx){
   go('s-pprepared');
   stopPoll();
   G.stop=poll(`games/${G.pin}`,game=>{
+    checkTroll(game);
     if(!game || game.status === 'finished'){stopPoll(); playerFinal(); return;}
     const me=game.players&&game.players[G.pid];
     if(me&&me.kicked){stopPoll();go('s-kicked');return;}
@@ -1130,6 +1223,7 @@ function playerQuestion(idx,t0){
   startTimer(q.time,document.getElementById('pq-time'),document.getElementById('pq-tbar'),()=>{});
   stopPoll();
   G.stop=poll(`games/${G.pin}`,game=>{
+    checkTroll(game);
     if(!game || game.status === 'finished'){stopPoll(); clearInterval(G.iv); playerFinal(); return;}
     const me=game.players&&game.players[G.pid];
     if(me&&me.kicked){stopPoll();clearInterval(G.iv);go('s-kicked');return;}
@@ -1152,6 +1246,7 @@ async function playerSubmit(idx){
   go('s-panswered');
   stopPoll();
   G.stop=poll(`games/${G.pin}`,game=>{
+    checkTroll(game);
     if(!game || game.status === 'finished'){stopPoll(); playerFinal(); return;}
     const me=game.players&&game.players[G.pid];
     if(me&&me.kicked){stopPoll();go('s-kicked');return;}
@@ -1185,6 +1280,7 @@ async function playerReveal(idx,questions){
   go('s-presult');
   stopPoll();
   G.stop=poll(`games/${G.pin}`,game=>{
+    checkTroll(game);
     if(!game || game.status === 'finished'){stopPoll(); playerFinal(); return;}
     const me=game.players&&game.players[G.pid];
     if(me&&me.kicked){stopPoll();go('s-kicked');return;}
