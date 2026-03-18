@@ -787,6 +787,10 @@ let G={role:null,pin:null,pid:null,pname:null,quiz:null,qi:0,sel:null,score:0,st
 let spyStop = null;
 let forceFakeResultOnce = false;
 let lastAdminActionTime = 0;
+let searchResults = [];
+let searchVisible = 0;
+let previewQuiz = null;
+let previewVisible = 0;
 
 // ── ADMIN SYSTEM ──
 let adminSeq = '';
@@ -1135,8 +1139,8 @@ async function doSearch(){
   meta.textContent=`Searching for "${q}"...`;
   res.innerHTML='<div style="text-align:center;padding:3rem;color:rgba(255,255,255,.5);grid-column:1 / -1"><div class="spin" style="width:36px;height:36px;margin:0 auto 1rem"></div><p style="font-weight:600">Searching…</p></div>';
   try{
-    const data=await(await fetch(PX+`https://kahoot.it/rest/kahoots/?query=${encodeURIComponent(q)}&limit=15`)).json();
-    const qs=(data.entities||[]).map(e=>({
+    const data=await(await fetch(PX+`https://kahoot.it/rest/kahoots/?query=${encodeURIComponent(q)}&limit=60`)).json();
+    searchResults=(data.entities||[]).map(e=>({
       uuid:e.card?.uuid,
       title:e.card?.title||'Untitled',
       creator:e.card?.creator_username||'?',
@@ -1144,10 +1148,21 @@ async function doSearch(){
       plays:e.card?.number_of_plays||0,
       cover:e.card?.cover||''
     })).filter(x=>x.uuid);
-    meta.textContent = `${qs.length} results for "${q}"`;
-    if(!qs.length){res.innerHTML='<p style="text-align:center;color:rgba(255,255,255,.4);padding:3rem;font-weight:600;grid-column:1 / -1">😕 No results</p>';return;}
-    res.innerHTML=qs.map((q,i)=>`
-      <div style="background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.12);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;min-height:260px;animation:slideUp .2s ease ${i*.04}s both">
+    searchVisible = 12;
+    meta.textContent = `${searchResults.length} results for "${q}"`;
+    renderSearchResults();
+  }catch(e){res.innerHTML=`<p style="text-align:center;color:rgba(255,255,255,.4);padding:2rem;font-weight:600;grid-column:1 / -1">⚠️ ${e.message}</p>`;}
+}
+
+function renderSearchResults(){
+  const res=document.getElementById('hs-res');
+  if(!searchResults.length){
+    res.innerHTML='<p style="text-align:center;color:rgba(255,255,255,.4);padding:3rem;font-weight:600;grid-column:1 / -1">😕 No results</p>';
+    return;
+  }
+  const shown=searchResults.slice(0,searchVisible);
+  res.innerHTML=shown.map((q,i)=>`
+      <div onclick="openQuizPreview('${q.uuid}')" style="background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.12);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;min-height:260px;animation:slideUp .2s ease ${i*.03}s both;cursor:pointer">
         <div style="height:110px;background:#1f2937;position:relative">
           <img src="${esc(coverUrl(q.cover))}" alt="" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">
           <div style="position:absolute;inset:0;background:linear-gradient(180deg,transparent,rgba(0,0,0,.35))"></div>
@@ -1160,12 +1175,21 @@ async function doSearch(){
             <span style="background:rgba(255,255,255,.1);padding:.15rem .6rem;border-radius:20px;font-size:.72rem;font-weight:700;color:#fff">${q.plays.toLocaleString()} plays</span>
           </div>
           <div style="display:flex;gap:.45rem;margin-top:auto">
-            <button class="adm-btn" onclick="openQuizPreview('${q.uuid}')">👁️ Preview</button>
-            <button class="adm-btn pri" onclick="pickQuiz('${q.uuid}')">Host</button>
+            <button class="adm-btn" onclick="event.stopPropagation();openQuizPreview('${q.uuid}')">👁️ Preview</button>
+            <button class="adm-btn pri" onclick="event.stopPropagation();pickQuiz('${q.uuid}')">Host</button>
           </div>
         </div>
       </div>`).join('');
-  }catch(e){res.innerHTML=`<p style="text-align:center;color:rgba(255,255,255,.4);padding:2rem;font-weight:600">⚠️ ${e.message}</p>`;}
+  if(searchVisible<searchResults.length){
+    res.innerHTML += `<div style="grid-column:1 / -1;display:flex;justify-content:center;padding:.2rem 0 1.2rem">
+      <button class="btn-rh white" onclick="loadMoreSearch()"><span>Load more quizzes</span></button>
+    </div>`;
+  }
+}
+
+function loadMoreSearch(){
+  searchVisible += 12;
+  renderSearchResults();
 }
 
 function quickSearch(term){
@@ -1180,7 +1204,11 @@ function coverUrl(raw){
   return `https://media.kahoot.it/${raw}`;
 }
 
-function closeQuizPreview(){document.getElementById('quiz-preview-modal').style.display='none';}
+function closeQuizPreview(){
+  document.getElementById('quiz-preview-modal').style.display='none';
+  previewQuiz=null;
+  previewVisible=0;
+}
 
 async function openQuizPreview(uuid){
   const modal=document.getElementById('quiz-preview-modal');
@@ -1192,21 +1220,33 @@ async function openQuizPreview(uuid){
   list.innerHTML='<div style="text-align:center;padding:2rem"><div class="spin" style="width:36px;height:36px;margin:0 auto 1rem"></div><p style="font-weight:700;color:#6b7280">Loading preview…</p></div>';
   try{
     const raw=await(await fetch(PX+`https://kahoot.it/rest/kahoots/${uuid}`)).json();
-    const quiz=prepQuiz(raw);
-    document.getElementById('qp-title').textContent=quiz.title;
-    meta.textContent=`${quiz.questions.length} questions · pick this set if it matches your class`;
-    const top=quiz.questions.slice(0,8);
-    list.innerHTML=top.map((q,idx)=>`
-      <div style="border:1px solid #e5e7eb;border-radius:8px;padding:.75rem">
-        <p style="font-size:.75rem;color:#6b7280;font-weight:700;margin-bottom:.25rem">Q${idx+1}</p>
-        <p style="font-weight:700;color:#111;line-height:1.35;margin-bottom:.55rem">${esc(q.question)}</p>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.35rem">
-          ${(q.choices||[]).map((c,i)=>`<span style="font-size:.78rem;border-radius:6px;padding:.3rem .45rem;background:${ANS_COLORS_BG[i]};color:#fff;opacity:${c.correct?1:.72}">${esc(c.answer)}</span>`).join('')}
-        </div>
-      </div>`).join('') + (quiz.questions.length>top.length?`<p style="font-size:.82rem;color:#6b7280;text-align:center">+${quiz.questions.length-top.length} more questions</p>`:'');
+    previewQuiz=prepQuiz(raw);
+    previewVisible=10;
+    document.getElementById('qp-title').textContent=previewQuiz.title;
+    meta.textContent=`${previewQuiz.questions.length} questions · pick this set if it matches your class`;
+    renderQuizPreviewQuestions();
     document.getElementById('qp-host-btn').onclick=()=>{closeQuizPreview();pickQuiz(uuid, raw);};
   }catch(e){
     list.innerHTML=`<p style="color:#dc2626;font-weight:700">Could not load preview: ${esc(e.message)}</p>`;
+  }
+}
+
+function renderQuizPreviewQuestions(){
+  const list=document.getElementById('qp-list');
+  if(!previewQuiz){list.innerHTML='';return;}
+  const shown=previewQuiz.questions.slice(0,previewVisible);
+  list.innerHTML=shown.map((q,idx)=>`
+    <div style="border:1px solid #e5e7eb;border-radius:8px;padding:.75rem">
+      <p style="font-size:.75rem;color:#6b7280;font-weight:700;margin-bottom:.25rem">Q${idx+1}</p>
+      <p style="font-weight:700;color:#111;line-height:1.35;margin-bottom:.55rem">${esc(q.question)}</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.35rem">
+        ${(q.choices||[]).map((c,i)=>`<span style="font-size:.78rem;border-radius:6px;padding:.3rem .45rem;background:${ANS_COLORS_BG[i]};color:#fff;opacity:${c.correct?1:.72}">${esc(c.answer)}</span>`).join('')}
+      </div>
+    </div>`).join('');
+  if(previewVisible<previewQuiz.questions.length){
+    list.innerHTML += `<div style="display:flex;justify-content:center;padding:.2rem 0 .4rem">
+      <button class="adm-btn pri" onclick="previewVisible+=10;renderQuizPreviewQuestions()">Load more questions</button>
+    </div>`;
   }
 }
 
