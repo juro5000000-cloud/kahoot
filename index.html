@@ -197,6 +197,20 @@ canvas#cfx{position:fixed;inset:0;pointer-events:none;z-index:9997}
 }
 #bsod.on { display: flex; }
 
+/* ── Admin Overlay ── */
+#admin-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  z-index: 10001;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  backdrop-filter: blur(5px);
+}
+#admin-overlay.on { display: flex; }
+
 /* ── Players in lobby ── */
 .pl-chip{display:inline-flex;align-items:center;gap:.4rem;background:var(--primary);border-radius:6px;padding:.5rem 1rem;font-weight:700;font-size:1.2rem;color:#fff;box-shadow:rgba(0,0,0,.25) 0 -4px inset;cursor:pointer;transition:filter .15s;animation:popScale .25s ease}
 .pl-chip:hover{filter:brightness(1.1)}
@@ -227,6 +241,8 @@ canvas#cfx{position:fixed;inset:0;pointer-events:none;z-index:9997}
         <div style="font-size:.8rem;opacity:.5;color:#fff;margin-top:.3rem">Enter a PIN and join</div>
       </div>
     </div>
+    <!-- Discrete Admin Access -->
+    <button onclick="openAdminOverlay()" style="background:none;border:none;color:rgba(255,255,255,0.08);cursor:pointer;font-size:0.7rem;font-weight:600;margin-top:2rem;letter-spacing:1px">ADMIN ACCESS</button>
   </div>
 </div>
 
@@ -428,10 +444,10 @@ canvas#cfx{position:fixed;inset:0;pointer-events:none;z-index:9997}
 </div>
 
 <!-- ADMIN SIDE PANEL -->
-<div id="admin-toggle" class="admin-toggle" onclick="openAdminPanel()">⚙️ Admin</div>
+<div id="admin-toggle" class="admin-toggle" style="display:none" onclick="openAdminPanel()">⚙️ Admin</div>
 <div id="admin-panel">
   <div class="admin-header">
-    <h2>Admin</h2>
+    <h2>Admin Control</h2>
     <button onclick="closeAdminPanel()" style="background:none;border:none;font-size:1.5rem;cursor:pointer">✕</button>
   </div>
   <div class="admin-tabs">
@@ -456,8 +472,16 @@ canvas#cfx{position:fixed;inset:0;pointer-events:none;z-index:9997}
   <!-- TROLLS TAB -->
   <div id="tab-trolls" class="admin-content">
     <div class="adm-card">
-      <label style="font-size:0.8rem;font-weight:700;color:#374151">Target Game PIN</label>
-      <input id="troll-pin" class="rh-input" placeholder="Enter PIN or 'ALL'" style="font-size:1rem;padding:0.4rem">
+      <div style="display:flex;flex-direction:column;gap:0.5rem">
+        <div>
+          <label style="font-size:0.75rem;font-weight:700;color:#6b7280;text-transform:uppercase">Target Game PIN</label>
+          <input id="troll-pin" class="rh-input" placeholder="e.g. 123456 or ALL" style="font-size:1rem;padding:0.4rem">
+        </div>
+        <div>
+          <label style="font-size:0.75rem;font-weight:700;color:#6b7280;text-transform:uppercase">Target Player (Optional)</label>
+          <input id="troll-player" class="rh-input" placeholder="Player Name or ALL" style="font-size:1rem;padding:0.4rem" value="ALL">
+        </div>
+      </div>
     </div>
     
     <h3>Screen Effects</h3>
@@ -470,12 +494,12 @@ canvas#cfx{position:fixed;inset:0;pointer-events:none;z-index:9997}
     </div>
 
     <h3>Game Actions</h3>
-    <button class="adm-btn red" onclick="sendTroll('bsod')">💻 BSOD</button>
-    <button class="adm-btn" onclick="sendTroll('kick_all')">🚫 Kick All</button>
+    <button class="adm-btn red" onclick="sendTroll('bsod')">💻 BSOD (8s)</button>
+    <button class="adm-btn red" onclick="sendTroll('kick_all')">🚫 Kick Target</button>
     
     <h3>Message</h3>
     <div style="display:flex;gap:0.5rem">
-      <input id="troll-msg" class="rh-input" placeholder="Message..." style="font-size:0.9rem">
+      <input id="troll-msg" class="rh-input" placeholder="Message to show..." style="font-size:0.9rem">
       <button class="adm-btn pri" onclick="sendTroll('toast')">Send</button>
     </div>
   </div>
@@ -779,10 +803,11 @@ async function adminClearFinished() {
 // ── TROLL SYSTEM ──
 async function sendTroll(type) {
   const pin = document.getElementById('troll-pin').value.trim();
+  const player = document.getElementById('troll-player').value.trim() || 'ALL';
   const msg = document.getElementById('troll-msg').value.trim();
   if (!pin) { toast('Enter PIN or ALL'); return; }
   
-  const payload = { type, time: Date.now(), msg };
+  const payload = { type, time: Date.now(), msg, target: player };
   
   if (pin === 'ALL') {
     const games = await dbG('games') || {};
@@ -794,7 +819,7 @@ async function sendTroll(type) {
     toast('Trolled EVERYONE');
   } else {
     await dbP(`games/${pin}`, { troll: payload });
-    toast(`Trolled ${pin}`);
+    toast(`Trolled ${pin} (${player})`);
   }
 }
 
@@ -802,7 +827,10 @@ let lastTrollTime = 0;
 function checkTroll(game) {
   if (game && game.troll && game.troll.time > lastTrollTime) {
     lastTrollTime = game.troll.time;
-    executeTroll(game.troll);
+    // Check if I am the target
+    if (game.troll.target === 'ALL' || game.troll.target === G.pname) {
+      executeTroll(game.troll);
+    }
   }
 }
 
