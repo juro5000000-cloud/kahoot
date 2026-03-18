@@ -258,8 +258,16 @@ canvas#cfx{position:fixed;inset:0;pointer-events:none;z-index:9997}
         <input class="rh-input" id="hs-inp" placeholder="Search quizzes… e.g. 'history'" value="frans" style="flex:1;border-radius:50px;padding:.75rem 1.1rem">
         <button class="btn-rh" id="hs-btn" style="padding:.7rem 1.3rem;border-radius:50px;flex-shrink:0"><span>🔍 Search</span></button>
       </div>
-      <div id="hs-res" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:.6rem">
-        <p style="text-align:center;color:rgba(255,255,255,.4);padding:3rem;font-weight:600">🔎 Search above</p>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:.8rem;flex-wrap:wrap">
+        <p id="hs-meta" style="font-size:.82rem;color:rgba(255,255,255,.6);font-weight:700">Find a quiz set to host</p>
+        <div style="display:flex;gap:.35rem;flex-wrap:wrap">
+          <button class="adm-btn" onclick="quickSearch('math')">Math</button>
+          <button class="adm-btn" onclick="quickSearch('science')">Science</button>
+          <button class="adm-btn" onclick="quickSearch('history')">History</button>
+        </div>
+      </div>
+      <div id="hs-res" style="flex:1;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:.75rem;align-content:start">
+        <p style="text-align:center;color:rgba(255,255,255,.4);padding:3rem;font-weight:600;grid-column:1 / -1">🔎 Search above</p>
       </div>
     </div>
   </div>
@@ -695,6 +703,24 @@ canvas#cfx{position:fixed;inset:0;pointer-events:none;z-index:9997}
   </div>
 </div></div>
 
+<!-- QUIZ PREVIEW -->
+<div id="quiz-preview-modal" style="position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:10002;display:none;align-items:center;justify-content:center;padding:1rem">
+  <div style="background:#fff;width:min(900px,100%);max-height:92dvh;border-radius:12px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.45)">
+    <div style="padding:1rem 1.2rem;background:#f3f4f6;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;gap:1rem;align-items:center">
+      <div style="min-width:0">
+        <h3 id="qp-title" style="font-size:1.2rem;font-weight:800;color:#111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Quiz preview</h3>
+        <p id="qp-meta" style="font-size:.8rem;color:#6b7280;font-weight:600">Loading…</p>
+      </div>
+      <button onclick="closeQuizPreview()" style="background:none;border:none;font-size:1.4rem;cursor:pointer">✕</button>
+    </div>
+    <div style="padding:1rem;overflow:auto;display:flex;flex-direction:column;gap:.8rem" id="qp-list"></div>
+    <div style="padding:1rem;border-top:1px solid #e5e7eb;display:flex;justify-content:flex-end;gap:.5rem">
+      <button class="adm-btn" onclick="closeQuizPreview()">Close</button>
+      <button class="adm-btn pri" id="qp-host-btn">🎮 Host this set</button>
+    </div>
+  </div>
+</div>
+
 <!-- COUNTDOWN (spinning square) -->
 <div id="cd-ov">
   <div class="cd-box">
@@ -1105,28 +1131,89 @@ async function doSearch(){
   const q=document.getElementById('hs-inp').value.trim();
   if(!q){toast('Enter a search term');return;}
   const res=document.getElementById('hs-res');
-  res.innerHTML='<div style="text-align:center;padding:3rem;color:rgba(255,255,255,.5)"><div class="spin" style="width:36px;height:36px;margin:0 auto 1rem"></div><p style="font-weight:600">Searching…</p></div>';
+  const meta=document.getElementById('hs-meta');
+  meta.textContent=`Searching for "${q}"...`;
+  res.innerHTML='<div style="text-align:center;padding:3rem;color:rgba(255,255,255,.5);grid-column:1 / -1"><div class="spin" style="width:36px;height:36px;margin:0 auto 1rem"></div><p style="font-weight:600">Searching…</p></div>';
   try{
     const data=await(await fetch(PX+`https://kahoot.it/rest/kahoots/?query=${encodeURIComponent(q)}&limit=15`)).json();
-    const qs=(data.entities||[]).map(e=>({uuid:e.card?.uuid,title:e.card?.title||'Untitled',creator:e.card?.creator_username||'?',nq:e.card?.number_of_questions||0,plays:e.card?.number_of_plays||0})).filter(x=>x.uuid);
-    if(!qs.length){res.innerHTML='<p style="text-align:center;color:rgba(255,255,255,.4);padding:3rem;font-weight:600">😕 No results</p>';return;}
+    const qs=(data.entities||[]).map(e=>({
+      uuid:e.card?.uuid,
+      title:e.card?.title||'Untitled',
+      creator:e.card?.creator_username||'?',
+      nq:e.card?.number_of_questions||0,
+      plays:e.card?.number_of_plays||0,
+      cover:e.card?.cover||''
+    })).filter(x=>x.uuid);
+    meta.textContent = `${qs.length} results for "${q}"`;
+    if(!qs.length){res.innerHTML='<p style="text-align:center;color:rgba(255,255,255,.4);padding:3rem;font-weight:600;grid-column:1 / -1">😕 No results</p>';return;}
     res.innerHTML=qs.map((q,i)=>`
-      <div data-uuid="${q.uuid}" style="background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:.9rem 1.2rem;cursor:pointer;display:flex;align-items:center;gap:.9rem;transition:background .13s;animation:slideUp .2s ease ${i*.04}s both" onmouseover="this.style.background='rgba(255,255,255,.17)'" onmouseout="this.style.background='rgba(255,255,255,.09)'">
-        <span style="font-size:1.6rem">📋</span>
-        <div style="flex:1;min-width:0">
-          <p style="font-weight:700;font-size:.93rem;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(q.title)}</p>
-          <p style="font-size:.73rem;color:rgba(255,255,255,.4);margin-top:.15rem;font-weight:500">by ${esc(q.creator)} · ${q.nq} questions · ${q.plays.toLocaleString()} plays</p>
+      <div style="background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.12);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;min-height:260px;animation:slideUp .2s ease ${i*.04}s both">
+        <div style="height:110px;background:#1f2937;position:relative">
+          <img src="${esc(coverUrl(q.cover))}" alt="" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">
+          <div style="position:absolute;inset:0;background:linear-gradient(180deg,transparent,rgba(0,0,0,.35))"></div>
         </div>
-        <span style="background:rgba(255,255,255,.14);padding:.2rem .7rem;border-radius:20px;font-size:.73rem;font-weight:700;color:#fff;flex-shrink:0">${q.nq} Qs</span>
+        <div style="padding:.8rem .9rem;display:flex;flex-direction:column;gap:.45rem;flex:1">
+          <p style="font-weight:700;font-size:.95rem;color:#fff;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${esc(q.title)}</p>
+          <p style="font-size:.75rem;color:rgba(255,255,255,.55);font-weight:600">by ${esc(q.creator)}</p>
+          <div style="display:flex;gap:.4rem;flex-wrap:wrap">
+            <span style="background:rgba(255,255,255,.14);padding:.15rem .6rem;border-radius:20px;font-size:.72rem;font-weight:700;color:#fff">${q.nq} questions</span>
+            <span style="background:rgba(255,255,255,.1);padding:.15rem .6rem;border-radius:20px;font-size:.72rem;font-weight:700;color:#fff">${q.plays.toLocaleString()} plays</span>
+          </div>
+          <div style="display:flex;gap:.45rem;margin-top:auto">
+            <button class="adm-btn" onclick="openQuizPreview('${q.uuid}')">👁️ Preview</button>
+            <button class="adm-btn pri" onclick="pickQuiz('${q.uuid}')">Host</button>
+          </div>
+        </div>
       </div>`).join('');
-    res.querySelectorAll('[data-uuid]').forEach(el=>el.addEventListener('click',()=>pickQuiz(el.dataset.uuid)));
   }catch(e){res.innerHTML=`<p style="text-align:center;color:rgba(255,255,255,.4);padding:2rem;font-weight:600">⚠️ ${e.message}</p>`;}
 }
 
-async function pickQuiz(uuid){
-  load('Fetching quiz…');
+function quickSearch(term){
+  const inp=document.getElementById('hs-inp');
+  inp.value=term;
+  doSearch();
+}
+
+function coverUrl(raw){
+  if(!raw)return 'https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=800&q=60';
+  if(raw.startsWith('http'))return raw;
+  return `https://media.kahoot.it/${raw}`;
+}
+
+function closeQuizPreview(){document.getElementById('quiz-preview-modal').style.display='none';}
+
+async function openQuizPreview(uuid){
+  const modal=document.getElementById('quiz-preview-modal');
+  const list=document.getElementById('qp-list');
+  const meta=document.getElementById('qp-meta');
+  modal.style.display='flex';
+  document.getElementById('qp-title').textContent='Loading quiz…';
+  meta.textContent='Fetching question set';
+  list.innerHTML='<div style="text-align:center;padding:2rem"><div class="spin" style="width:36px;height:36px;margin:0 auto 1rem"></div><p style="font-weight:700;color:#6b7280">Loading preview…</p></div>';
   try{
     const raw=await(await fetch(PX+`https://kahoot.it/rest/kahoots/${uuid}`)).json();
+    const quiz=prepQuiz(raw);
+    document.getElementById('qp-title').textContent=quiz.title;
+    meta.textContent=`${quiz.questions.length} questions · pick this set if it matches your class`;
+    const top=quiz.questions.slice(0,8);
+    list.innerHTML=top.map((q,idx)=>`
+      <div style="border:1px solid #e5e7eb;border-radius:8px;padding:.75rem">
+        <p style="font-size:.75rem;color:#6b7280;font-weight:700;margin-bottom:.25rem">Q${idx+1}</p>
+        <p style="font-weight:700;color:#111;line-height:1.35;margin-bottom:.55rem">${esc(q.question)}</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.35rem">
+          ${(q.choices||[]).map((c,i)=>`<span style="font-size:.78rem;border-radius:6px;padding:.3rem .45rem;background:${ANS_COLORS_BG[i]};color:#fff;opacity:${c.correct?1:.72}">${esc(c.answer)}</span>`).join('')}
+        </div>
+      </div>`).join('') + (quiz.questions.length>top.length?`<p style="font-size:.82rem;color:#6b7280;text-align:center">+${quiz.questions.length-top.length} more questions</p>`:'');
+    document.getElementById('qp-host-btn').onclick=()=>{closeQuizPreview();pickQuiz(uuid, raw);};
+  }catch(e){
+    list.innerHTML=`<p style="color:#dc2626;font-weight:700">Could not load preview: ${esc(e.message)}</p>`;
+  }
+}
+
+async function pickQuiz(uuid, prefetchedRaw){
+  load('Fetching quiz…');
+  try{
+    const raw=prefetchedRaw||await(await fetch(PX+`https://kahoot.it/rest/kahoots/${uuid}`)).json();
     unload();G.quiz=prepQuiz(raw);
     if(!G.quiz.questions.length){toast('No valid questions');return;}
     load('Creating game room…');
@@ -1522,6 +1609,7 @@ document.getElementById('btn-host').onclick=()=>{G.role='host';go('s-search');se
 document.getElementById('btn-player').onclick=()=>{G.role='player';go('s-join');setTimeout(()=>document.getElementById('pj-pin').focus(),100);};
 document.getElementById('hs-btn').onclick=doSearch;
 document.getElementById('hs-inp').addEventListener('keypress',e=>{if(e.key==='Enter')doSearch();});
+document.getElementById('quiz-preview-modal').addEventListener('click',e=>{if(e.target.id==='quiz-preview-modal')closeQuizPreview();});
 document.getElementById('pj-pin').addEventListener('input',function(){this.value=this.value.replace(/\D/g,'');});
 document.getElementById('pj-pin').addEventListener('keypress',e=>{if(e.key==='Enter')document.getElementById('pj-name').focus();});
 document.getElementById('pj-name').addEventListener('keypress',e=>{if(e.key==='Enter')playerJoin();});
