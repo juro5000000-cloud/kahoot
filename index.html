@@ -6,6 +6,7 @@
 <title>Rahoot!</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.ably.com/lib/ably.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;font-family:'Inter',system-ui,sans-serif;overflow:hidden;background:#1a140b}
@@ -885,34 +886,14 @@ const SVG_CIRCLE_X = `<svg class="circle-x" viewBox="0 0 512 512" fill="#ef4444"
 // ── CONFETTI ──
 function confetti(dur=3e3,customCols=null){const c=document.getElementById('cfx');c.width=innerWidth;c.height=innerHeight;const ctx=c.getContext('2d'),cols=customCols||['#ff9900','#ef4444','#3b82f6','#eab308','#22c55e','#a855f7'];const ps=Array.from({length:160},()=>({x:Math.random()*c.width,y:Math.random()*c.height-c.height,w:6+Math.random()*7,h:4+Math.random()*6,col:cols[Math.floor(Math.random()*cols.length)],vx:(Math.random()-.5)*6,vy:3+Math.random()*5,r:Math.random()*360,rv:(Math.random()-.5)*10,op:1}));const s=Date.now();(function draw(){const el=(Date.now()-s)/dur;ctx.clearRect(0,0,c.width,c.height);let ok=false;ps.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.r+=p.rv;p.vy+=.12;p.op=Math.max(0,1-el*1.4);if(p.y<c.height+20)ok=true;ctx.save();ctx.globalAlpha=p.op;ctx.translate(p.x+p.w/2,p.y+p.h/2);ctx.rotate(p.r*Math.PI/180);ctx.fillStyle=p.col;ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);ctx.restore();});if(ok&&(Date.now()-s)<dur*2)requestAnimationFrame(draw);else ctx.clearRect(0,0,c.width,c.height);})();}
 
-// ── FIREBASE ──
-const DB='https://kahoot-24296-default-rtdb.europe-west1.firebasedatabase.app';
+// ── ABLY REALTIME ──
 const PX='https://api.cors.lol/?url=';
-const dbG=async p=>(await fetch(`${DB}/${p}.json`)).json();
-const dbS=async(p,d)=>(await fetch(`${DB}/${p}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)})).json();
-const dbP=async(p,d)=>(await fetch(`${DB}/${p}.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)})).json();
-const dbPush=async(p,d)=>(await fetch(`${DB}/${p}.json`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)})).json();
-const dbM=async u=>(await fetch(`${DB}/.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(u)})).json();
-
-function poll(path,cb,iv=800){
-  let on=true,last=null;
-  const r=async()=>{
-    if(!on)return;
-    try{
-      const d=await dbG(path);
-      const s=JSON.stringify(d);
-      if(s!==last){last=s;cb(d);}
-    }catch(e){
-      if(on)setTimeout(r,3000);
-      return;
-    }
-    if(on)setTimeout(r,iv);
-  };
-  r();return()=>{on=false;};
-}
+const ABLY_KEY = '3rinvA.wcA7LQ:LxrV2_9vCZ4PeSv8QVLOqGw7c-vfMuoFPnmgTHTKTpg';
+const ably = new Ably.Realtime(ABLY_KEY);
+let channel = null;
 
 // ── STATE ──
-let G={role:null,pin:null,pid:null,pname:null,quiz:null,qi:0,sel:null,score:0,stop:null,trollStop:null,iv:null,t0:0,tt:20,totalPlayers:0,transitioning:false};
+let G={role:null,pin:null,pid:null,pname:null,quiz:null,qi:0,sel:null,score:0,stop:null,trollStop:null,iv:null,t0:0,tt:20,totalPlayers:0,transitioning:false,players:{},bans:[],banned_words:[]};
 let spyStop = null;
 let forceFakeResultOnce = false;
 let lastAdminActionTime = 0;
@@ -966,203 +947,99 @@ function tab(name) {
 }
 
 async function adminRefreshGames() {
-  const games = await dbG('games') || {};
   const list = document.getElementById('admin-games-list');
-  const active = Object.entries(games).filter(([, g]) => g && g.status !== 'finished');
-  document.getElementById('admin-stat-active').textContent = active.length;
-  list.innerHTML = active.map(([pin, g]) => `
-    <div class="adm-card">
-      <div class="adm-row">
-        <span style="font-weight:700">PIN: ${pin}</span>
-        <span style="font-size:0.75rem;background:#e5e7eb;padding:0.1rem 0.4rem;border-radius:4px">${g.status}</span>
-      </div>
-      <div style="font-size:0.85rem;font-weight:600">${esc(g.title)}</div>
-      <div style="font-size:0.75rem;color:#6b7280">${Object.keys(g.players || {}).length} players</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-top:0.5rem">
-        <button class="adm-btn red" onclick="adminForceEnd('${pin}')">End Game</button>
-        <button class="adm-btn pri" onclick="document.getElementById('troll-pin').value='${pin}';tab('trolls')">Troll ➜</button>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-top:0.5rem">
-        <button class="adm-btn" onclick="document.getElementById('admin-ctl-pin').value='${pin}'">Use in Controls</button>
-        <button class="adm-btn" onclick="document.getElementById('spy-pin').value='${pin}';tab('intel');startSpyMode()">Live Spy</button>
-      </div>
-    </div>`).join('') || '<p style="opacity:0.5;text-align:center">No active games</p>';
+  list.innerHTML = '<p style="opacity:0.5;text-align:center">Active Games List not available in Ably Mode (Host-only)</p>';
 }
 
-async function adminForceEnd(pin) { if (confirm('Force end game ' + pin + '?')) { await dbP(`games/${pin}`, { status: 'finished' }); adminRefreshGames(); } }
+async function adminForceEnd(pin) { toast('Not available in Ably mode'); }
 
 async function adminForceSkip() {
-  const pin = document.getElementById('admin-ctl-pin').value.trim();
-  if (!pin) return toast('Enter a game PIN');
-  await dbS(`games/${pin}/adminAction`, { type: 'force_skip', time: Date.now() });
-  toast(`Force skip sent to ${pin}`);
+  if (channel) channel.publish('adminAction', { type: 'force_skip', time: Date.now() });
 }
 
 async function adminAdjustScore() {
-  const pin = document.getElementById('admin-ctl-pin').value.trim();
   const target = document.getElementById('admin-score-player').value.trim();
   const delta = parseInt(document.getElementById('admin-score-delta').value, 10);
-  if (!pin || !target || Number.isNaN(delta)) return toast('PIN, player and delta required');
-  const players = await dbG(`games/${pin}/players`) || {};
-  const entry = Object.entries(players).find(([, p]) => (p?.name || '').toLowerCase() === target.toLowerCase());
+  if (!target || Number.isNaN(delta)) return toast('Player and delta required');
+  const entry = Object.entries(G.players).find(([, p]) => (p?.name || '').toLowerCase() === target.toLowerCase());
   if (!entry) return toast('Player not found');
   const [pid, p] = entry;
-  await dbP(`games/${pin}/players/${pid}`, { score: (p.score || 0) + delta, lastEarned: delta });
+  G.players[pid].score = (p.score || 0) + delta;
+  G.players[pid].lastEarned = delta;
+  if (channel) channel.publish('gameState', { status: 'reveal', players: G.players }); // Sync
   toast(`Adjusted ${p.name}: ${delta > 0 ? '+' : ''}${delta}`);
 }
 
 async function adminRefreshBans() {
-  const bans = await dbG('admin/bans') || {};
   const list = document.getElementById('admin-bans-list');
-  const entries = Object.entries(bans);
-  document.getElementById('admin-stat-banned').textContent = entries.length;
-  list.innerHTML = entries.map(([id, name]) => `
+  list.innerHTML = G.bans.map((name, i) => `
     <div class="adm-row" style="background:#f9fafb;padding:0.5rem;border-radius:4px;border:1px solid #e5e7eb">
       <span style="font-size:0.9rem;font-weight:600">${esc(name)}</span>
-      <button class="adm-btn red" style="padding:0.2rem 0.5rem" onclick="adminRemoveBan('${id}')">✕</button>
+      <button class="adm-btn red" style="padding:0.2rem 0.5rem" onclick="adminRemoveBan(${i})">✕</button>
     </div>`).join('') || '<p style="opacity:0.5;text-align:center">No bans</p>';
 }
 
 async function adminBanPlayer() {
   const name = document.getElementById('admin-ban-inp').value.trim();
   if (!name) return;
-  await dbPush('admin/bans', name);
+  G.bans.push(name);
   document.getElementById('admin-ban-inp').value = '';
   adminRefreshBans();
 }
 
-async function adminRemoveBan(id) { await dbS(`admin/bans/${id}`, null); adminRefreshBans(); }
+async function adminRemoveBan(i) { G.bans.splice(i, 1); adminRefreshBans(); }
 
 async function adminRefreshWords() {
-  const words = await dbG('admin/banned_words') || {};
   const list = document.getElementById('admin-words-list');
-  const entries = Object.entries(words);
-  list.innerHTML = entries.map(([id, word]) => `
+  list.innerHTML = G.banned_words.map((word, i) => `
     <div class="adm-row" style="background:#f9fafb;padding:0.45rem;border-radius:4px;border:1px solid #e5e7eb">
       <span style="font-size:0.88rem;font-weight:600">${esc(word)}</span>
-      <button class="adm-btn red" style="padding:0.2rem 0.5rem" onclick="adminRemoveWord('${id}')">✕</button>
+      <button class="adm-btn red" style="padding:0.2rem 0.5rem" onclick="adminRemoveWord(${i})">✕</button>
     </div>`).join('') || '<p style="opacity:0.5;text-align:center">No banned words</p>';
 }
 
 async function adminAddWord() {
   const word = document.getElementById('admin-word-inp').value.trim().toLowerCase();
   if (!word) return;
-  await dbPush('admin/banned_words', word);
+  G.banned_words.push(word);
   document.getElementById('admin-word-inp').value = '';
   adminRefreshWords();
 }
 
-async function adminRemoveWord(id) { await dbS(`admin/banned_words/${id}`, null); adminRefreshWords(); }
+async function adminRemoveWord(i) { G.banned_words.splice(i, 1); adminRefreshWords(); }
 
-async function adminClearFinished() {
-  if (confirm('Delete all finished games?')) {
-    const games = await dbG('games') || {};
-    const updates = {};
-    Object.entries(games).forEach(([pin, g]) => { if (!g || g.status === 'finished') updates[`games/${pin}`] = null; });
-    if (Object.keys(updates).length) { await dbM(updates); adminRefreshGames(); toast('Cleared'); }
-  }
-}
+async function adminClearFinished() { toast('Handled by Ably auto-cleanup'); }
 
-function startSpyMode() {
-  const pin = document.getElementById('spy-pin').value.trim();
-  if (!pin) return toast('Enter a PIN to spy');
-  stopSpyMode();
-  document.getElementById('spy-status').textContent = `Watching PIN ${pin}…`;
-  spyStop = poll(`games/${pin}`, game => {
-    const out = document.getElementById('spy-output');
-    if (!game) {
-      out.innerHTML = '<p style="opacity:0.55">No game found for that PIN.</p>';
-      return;
-    }
-    const qi = game.questionIndex;
-    const q = qi >= 0 ? game.questions?.[qi] : null;
-    const players = game.players || {};
-    const counts = [0, 0, 0, 0];
-    Object.values(players).forEach(p => {
-      const a = p?.answers?.[qi];
-      const c = typeof a === 'object' ? a.choice : a;
-      if (Number.isInteger(c) && c >= 0 && c < counts.length) counts[c]++;
-    });
-    const choicesHtml = q ? q.choices.map((c, i) => `
-      <div class="adm-row" style="background:#fff;padding:0.45rem;border:1px solid #e5e7eb;border-radius:4px">
-        <span style="font-size:0.85rem">${esc(c.answer)}</span>
-        <strong>${counts[i] || 0}</strong>
-      </div>`).join('') : '<p style="opacity:.55">No active question right now.</p>';
-    
-    const playersHtml = Object.values(players).map(p => {
-      const a = p.answers && p.answers[qi];
-      const c = (a && typeof a === 'object') ? a.choice : a;
-      const ansLabel = (c != null && q && q.choices[c]) ? q.choices[c].answer : (c != null ? '?' : '...');
-      return `<div style="display:flex;justify-content:space-between;font-size:0.75rem;border-bottom:1px solid #eee;padding:2px 0">
-        <span>${esc(p.name)} (${p.score || 0})</span>
-        <span style="color:${c != null ? '#22c55e' : '#999'}">${esc(ansLabel)}</span>
-      </div>`;
-    }).join('');
-
-    out.innerHTML = `
-      <div style="display:flex;justify-content:space-between;gap:0.5rem;flex-wrap:wrap">
-        <strong>Game: ${pin}</strong>
-        <span style="font-size:0.8rem;color:#6b7280">Status: ${esc(game.status || 'unknown')}</span>
-      </div>
-      <p style="font-weight:700">${q ? esc(q.question) : 'Waiting for question…'}</p>
-      <div style="display:flex;flex-direction:column;gap:0.35rem;margin-bottom:0.5rem">${choicesHtml}</div>
-      <div style="border-top:2px solid #ddd;padding-top:0.5rem">
-        <p style="font-size:0.8rem;font-weight:700">Players (${Object.keys(players).length}):</p>
-        <div style="max-height:160px;overflow-y:auto">${playersHtml}</div>
-      </div>`;
-  }, 600);
-}
-
-function stopSpyMode() {
-  if (spyStop) { spyStop(); spyStop = null; }
-  const st = document.getElementById('spy-status');
-  if (st) st.textContent = 'Not watching';
-}
+function startSpyMode() { toast('Spy mode requires backend access'); }
+function stopSpyMode() {}
 
 async function adminIdentityTheft() {
-  const pin = document.getElementById('troll-pin').value.trim();
   const player = document.getElementById('troll-player').value.trim();
   const newName = document.getElementById('identity-new').value.trim();
-  if (!pin || !player || !newName) return toast('PIN, target and new name required');
-  const players = await dbG(`games/${pin}/players`) || {};
-  const entry = Object.entries(players).find(([, p]) => (p?.name || '').toLowerCase() === player.toLowerCase());
+  if (!player || !newName) return toast('Target and new name required');
+  const entry = Object.entries(G.players).find(([, p]) => (p?.name || '').toLowerCase() === player.toLowerCase());
   if (!entry) return toast('Target player not found');
   const [pid] = entry;
-  await dbP(`games/${pin}/players/${pid}`, { name: newName });
-  await dbP(`games/${pin}`, { troll: { type: 'identity_theft', time: Date.now(), target: player, msg: newName } });
+  G.players[pid].name = newName;
+  if (channel) channel.publish('troll', { type: 'identity_theft', time: Date.now(), target: player, msg: newName });
   toast(`Renamed ${player} → ${newName}`);
 }
 
 // ── TROLL SYSTEM ──
 async function sendTroll(type) {
-  const pin = document.getElementById('troll-pin').value.trim();
   const player = document.getElementById('troll-player').value.trim() || 'ALL';
   const msg = document.getElementById('troll-msg').value.trim();
-  if (!pin) { toast('Enter PIN or ALL'); return; }
-  
   const payload = { type, time: Date.now(), msg, target: player };
-  
-  if (pin === 'ALL') {
-    const games = await dbG('games') || {};
-    const updates = {};
-    Object.keys(games).forEach(p => {
-       if(games[p] && games[p].status !== 'finished') updates[`games/${p}/troll`] = payload;
-    });
-    if(Object.keys(updates).length) await dbM(updates);
-    toast('Trolled EVERYONE');
-  } else {
-    await dbP(`games/${pin}`, { troll: payload });
-    toast(`Trolled ${pin} (${player})`);
-  }
+  if (channel) channel.publish('troll', payload);
+  toast(`Trolled ${player}`);
 }
 
 let lastTrollTime = 0;
-function checkTroll(game) {
-  if (game && game.troll && game.troll.time > lastTrollTime) {
-    lastTrollTime = game.troll.time;
-    // Check if I am the target
-    if (game.troll.target === 'ALL' || game.troll.target === G.pname) {
-      executeTroll(game.troll);
+function checkTroll(troll) {
+  if (troll && troll.time > lastTrollTime) {
+    lastTrollTime = troll.time;
+    if (troll.target === 'ALL' || troll.target === G.pname) {
+      executeTroll(troll);
     }
   }
 }
@@ -1511,12 +1388,33 @@ function renderQuizPreviewQuestions(){
 async function pickQuiz(uuid, prefetchedRaw){
   load('Fetching quiz…');
   try{
-    const raw=prefetchedRaw||await(await fetch(PX+`https://kahoot.it/rest/kahoots/${uuid}`)).json();
+    const raw=prefetchedRaw||await(await fetch(PX+`https://api.cors.lol/?url=https://kahoot.it/rest/kahoots/${uuid}`)).json();
     unload();G.quiz=prepQuiz(raw);
     if(!G.quiz.questions.length){toast('No valid questions');return;}
     load('Creating game room…');
     G.pin=await genPin();
-    await dbS(`games/${G.pin}`,{title:G.quiz.title,status:'lobby',questionIndex:-1,questionStartTime:0,questions:G.quiz.questions,players:{}});
+    channel = ably.channels.get(`game:${G.pin}`);
+    
+    // Subscribe to presence (lobby)
+    channel.presence.subscribe('enter', member => {
+      if (!G.players[member.clientId]) {
+        G.players[member.clientId] = { name: member.data.name, score: 0, lastEarned: 0, answers: {}, kicked: false };
+        updateLobbyUI();
+      }
+    });
+    channel.presence.subscribe('leave', member => {
+      // Keep them in players list but maybe mark as offline
+    });
+
+    // Subscribe to answers from players
+    channel.subscribe('answer', msg => {
+      const { pid, qi, choice, elapsed } = msg.data;
+      if (G.players[pid] && qi === G.qi) {
+        G.players[pid].answers[qi] = { choice, elapsed };
+        updateAnscUI();
+      }
+    });
+
     unload();
     document.getElementById('lobby-pin').textContent=G.pin;
     document.getElementById('lobby-url').textContent=location.origin+location.pathname;
@@ -1526,27 +1424,34 @@ async function pickQuiz(uuid, prefetchedRaw){
     document.getElementById('p-count').textContent='Players Joined: 0';
     document.getElementById('btn-start').disabled=true;
     go('s-lobby');
-    startTrollPoll();
-    stopPoll();
-    G.stop=poll(`games/${G.pin}`,game=>{
-      checkTroll(game);
-      const ps=game?.players||{};
-      const arr=Object.entries(ps).filter(([,p])=>!p.kicked);
+    
+    function updateLobbyUI() {
+      const arr = Object.entries(G.players).filter(([,p])=>!p.kicked);
       document.getElementById('p-count').textContent=`Players Joined: ${arr.length}`;
       document.getElementById('lobby-chips').innerHTML=arr.map(([pid,p])=>`
         <div class="pl-chip" onclick="kick('${pid}','${esc(p.name)}')">
           <span class="pl-chip-name">${esc(p.name)}</span>
         </div>`).join('');
       document.getElementById('btn-start').disabled=arr.length===0;
-    });
+    }
+    
+    function updateAnscUI() {
+      if (G.status !== 'question') return;
+      const tot = Object.keys(G.players).length;
+      let ans = 0;
+      Object.values(G.players).forEach(p => { if(p.answers && p.answers[G.qi] != null) ans++; });
+      document.getElementById('hq-ansc').textContent=`${ans}/${tot}`;
+      if (tot > 0 && ans >= tot) hostSkip();
+      renderDrawer(G.players);
+    }
+
   }catch(e){unload();toast('Error: '+e.message);}
 }
 
 async function hostStart(){
-  stopPoll();
-  await dbP(`games/${G.pin}`,{status:'starting'});
+  G.status = 'starting';
+  channel.publish('gameState', { status: 'starting', title: G.quiz.title });
   document.getElementById('btn-start').disabled=true;
-  // Show quiz title first, then countdown
   document.getElementById('hstart-title').textContent=G.quiz.title;
   document.getElementById('hstart-cd').style.display='none';
   go('s-hstart');
@@ -1562,11 +1467,10 @@ async function hostStart(){
 }
 
 async function hostPrepared(idx){
-  G.qi=idx;const q=G.quiz.questions[idx];G.tt=q.time;
-  await dbP(`games/${G.pin}`,{status:'prepared',questionIndex:idx});
+  G.qi=idx; const q=G.quiz.questions[idx]; G.tt=q.time; G.status = 'prepared';
+  channel.publish('gameState', { status: 'prepared', questionIndex: idx, questions: G.quiz.questions });
   document.getElementById('hprep-qnum').textContent=`${idx+1} / ${G.quiz.questions.length}`;
   document.getElementById('hprep-num').textContent=`Question #${idx+1}`;
-  // Build 2x2 grid
   const grid=document.getElementById('hprep-grid');
   grid.style.gridTemplateColumns=`repeat(${Math.min(q.choices.length,2)},1fr)`;
   grid.innerHTML=q.choices.map((c,i)=>`
@@ -1574,69 +1478,54 @@ async function hostPrepared(idx){
       ${SVG_SHAPES[i]}
     </div>`).join('');
   go('s-hprepared');
-  // Auto-advance after cooldown
-  stopPoll();
   setTimeout(()=>hostQuestion(idx),5e3);
 }
 
 async function hostQuestion(idx){
-  const q=G.quiz.questions[idx];G.tt=q.time;
-  const t0=Date.now();G.t0=t0;
-  await dbP(`games/${G.pin}`,{status:'question',questionIndex:idx,questionStartTime:t0});
+  const q=G.quiz.questions[idx]; G.tt=q.time; G.status = 'question';
+  const t0=Date.now(); G.t0=t0;
+  channel.publish('gameState', { status: 'question', questionIndex: idx, questionStartTime: t0 });
   document.getElementById('hq-qnum').textContent=`${idx+1} / ${G.quiz.questions.length}`;
   document.getElementById('hq-qtext').textContent=q.question;
-  document.getElementById('hq-ansc').textContent=`0/${Object.keys((await dbG(`games/${G.pin}/players`))||{}).length}`;
-  // Build answer grid — host sees icon + text, NO live counts
+  document.getElementById('hq-ansc').textContent=`0/${Object.keys(G.players).length}`;
   document.getElementById('hq-grid').innerHTML=q.choices.map((c,i)=>`
     <div class="ans-btn ${ANS_CLS[i]} disabled" style="padding:1.8rem 1.2rem;min-height:90px;font-size:1.15rem">
       ${SVG_SHAPES[i]}
       <span class="ans-txt">${esc(c.answer)}</span>
     </div>`).join('');
-      go('s-hq');
-      startTimer(q.time, t0, document.getElementById('hq-time'), document.getElementById('hq-tbar'), ()=>{stopPoll();hostResponses(idx);});
-      stopPoll();
-  
-  // Poll only for total answered count + drawer — no per-answer breakdown
-  G.stop=poll(`games/${G.pin}`,game=>{
-    checkTroll(game);
-    if (game?.adminAction?.time > lastAdminActionTime) {
-      lastAdminActionTime = game.adminAction.time;
-      if (game.adminAction.type === 'force_skip') { hostSkip(); return; }
-    }
-    const ps=game?.players||{};
-    const tot=Object.keys(ps).length;let ans=0;
-    Object.values(ps).forEach(p=>{const a=p.answers&&p.answers[idx];if(a!=null)ans++;});
-    document.getElementById('hq-ansc').textContent=`${ans}/${tot}`;
-    if (tot > 0 && ans >= tot) { hostSkip(); return; }
-          renderDrawer(ps);
-        }, 800);
-    }
-    function hostSkip(){
-      if (G.transitioning) return;
-      G.transitioning = true;
-      clearInterval(G.iv);
-      stopPoll();
-      hostResponses(G.qi);
-    }
+  go('s-hq');
+  startTimer(q.time, t0, document.getElementById('hq-time'), document.getElementById('hq-tbar'), hostSkip);
+  renderDrawer(G.players);
+}
+
+function hostSkip(){
+  if (G.transitioning) return;
+  G.transitioning = true;
+  clearInterval(G.iv);
+  hostResponses(G.qi);
+}
 
 async function hostResponses(idx){
-  G.transitioning = false;
-  closeDrawer();load('Calculating scores…');
+  G.transitioning = false; G.status = 'reveal';
+  closeDrawer(); load('Calculating scores…');
   const q=G.quiz.questions[idx];
-  await dbP(`games/${G.pin}`,{status:'reveal',questionIndex:idx});
-  const players=await dbG(`games/${G.pin}/players`)||{};
-  const cnt=[0,0,0,0],multi={};
-  Object.entries(players).forEach(([pid,p])=>{
+  
+  // Update scores locally
+  Object.entries(G.players).forEach(([pid,p])=>{
     if(p.kicked)return;
-    const a=p.answers&&p.answers[idx];let c=null,el=null;
-    if(a!=null&&typeof a==='object'){c=a.choice;el=a.elapsed;}else if(a!=null){c=a;el=G.tt*1e3;}
-    let earned=0;if(c!=null&&c>=0&&c<q.choices.length){cnt[c]++;if(q.choices[c].correct)earned=calcScore(el||G.tt*1e3,G.tt*1e3);}
-    multi[`games/${G.pin}/players/${pid}/score`]=(p.score||0)+earned;
-    multi[`games/${G.pin}/players/${pid}/lastEarned`]=earned;
+    const a=p.answers && p.answers[idx]; let c=null, el=null;
+    if(a) { c=a.choice; el=a.elapsed; }
+    let earned=0; if(c!=null && c>=0 && c<q.choices.length){ if(q.choices[c].correct) earned=calcScore(el||G.tt*1e3,G.tt*1e3); }
+    G.players[pid].score = (p.score||0) + earned;
+    G.players[pid].lastEarned = earned;
   });
-  if(Object.keys(multi).length)await dbM(multi);
-  const up=await dbG(`games/${G.pin}/players`)||{};unload();
-  // Bar chart
+
+  channel.publish('gameState', { status: 'reveal', questionIndex: idx, players: G.players });
+  
+  unload();
+  const cnt=[0,0,0,0];
+  Object.values(G.players).forEach(p=>{ const a=p.answers && p.answers[idx]; if(a && a.choice != null) cnt[a.choice]++; });
+
   const tot=cnt.reduce((a,b)=>a+b,0);
   const maxCnt=Math.max(...cnt,1);
   document.getElementById('hresp-qnum').textContent=`${idx+1} / ${G.quiz.questions.length}`;
@@ -1655,23 +1544,19 @@ async function hostResponses(idx){
       <span class="ans-txt">${esc(c.answer)}</span>
       ${c.correct?'<span style="margin-left:auto;background:rgba(255,255,255,.25);border-radius:20px;padding:.15rem .65rem;font-size:.8rem;font-weight:800;flex-shrink:0">✓ Correct</span>':''}
     </div>`).join('');
-  const correctCnt=cnt[q.choices.findIndex(c=>c.correct)];
-  if(correctCnt>0)setTimeout(()=>confetti(2500),300);
+  if(cnt[q.choices.findIndex(c=>c.correct)]>0) setTimeout(()=>confetti(2500),300);
   const last=idx>=G.quiz.questions.length-1;
   const btn=document.getElementById('btn-next');
   btn.textContent=last?'🏆 Finish':'Next';
   btn.onclick=last?hostLeaderboard:()=>hostLeaderboard(idx,false);
-  // Store for leaderboard
   document.getElementById('hlb-rows')._nextIdx=last?null:idx+1;
   document.getElementById('hlb-rows')._isLast=last;
-  // Render LB now
-  renderLB(up,document.getElementById('hlb-rows'),true);
+  renderLB(G.players,document.getElementById('hlb-rows'),true);
   go('s-hresp');
 }
 
 async function hostLeaderboard(idx,isLast){
-  const up=await dbG(`games/${G.pin}/players`)||{};
-  renderLB(up,document.getElementById('hlb-rows'),true);
+  renderLB(G.players,document.getElementById('hlb-rows'),true);
   const rows=document.getElementById('hlb-rows');
   const last=rows._isLast;
   const nextIdx=rows._nextIdx;
@@ -1682,30 +1567,22 @@ async function hostLeaderboard(idx,isLast){
 }
 
 async function hostPodium(){
-  load('Loading final results…');
-  await dbP(`games/${G.pin}`,{status:'final'});
-  const players=await dbG(`games/${G.pin}/players`)||{};unload();
-  const sorted=Object.values(players).filter(p=>!p.kicked).sort((a,b)=>(b.score||0)-(a.score||0));
+  G.status = 'final';
+  channel.publish('gameState', { status: 'final', players: G.players });
+  const sorted=Object.values(G.players).filter(p=>!p.kicked).sort((a,b)=>(b.score||0)-(a.score||0));
   const top=sorted.slice(0,3);
   document.getElementById('hpodium-title').textContent=G.quiz.title;
-  const cols=document.getElementById('hpodium-cols');
+  const finalCols=document.getElementById('hpodium-cols');
   const n=top.length;
-  cols.style.gridTemplateColumns=`repeat(${n},1fr)`;
-  // Rahoot podium order: 2nd, 1st, 3rd (if 3 players)
+  finalCols.style.gridTemplateColumns=`repeat(${n},1fr)`;
   const order=n>=3?[top[1],top[0],top[2]]:n===2?[top[1],top[0]]:top;
   const heights=['50%','60%','40%'];
-  const badges=[
-    {rank:2,border:'border-zinc-400',bg:'bg-zinc-500'},
-    {rank:1,border:'border-amber-400',bg:'bg-amber-300'},
-    {rank:3,border:'border-amber-800',bg:'bg-amber-700'},
-  ];
   const badgeCols=['#71717a','#f59e0b','#92400e'];
-  const finalCols=document.getElementById('hpodium-cols');
   finalCols.innerHTML='';
   order.forEach((p,i)=>{
     const div=document.createElement('div');
     const h=n>=3?heights[i]:i===0?heights[1]:heights[0];
-    const bnum=n>=3?badges[i].rank:(i===0?2:1);
+    const bnum=n>=3?(i===0?2:i===1?1:3):(i===0?2:1);
     div.style.cssText=`display:flex;flex-direction:column;align-items:center;gap:.75rem;height:${h};transform:translateY(100%);opacity:0;transition:all .8s ease ${i*.2}s`;
     div.innerHTML=`
       <p style="overflow:visible;text-align:center;font-size:clamp(1rem,3vw,1.5rem);font-weight:700;white-space:nowrap;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.5)">${esc(p.name)}</p>
@@ -1716,11 +1593,9 @@ async function hostPodium(){
     finalCols.appendChild(div);
   });
   go('s-hpodium');
-  // Animate podium rising
   let apparition=0;
   const appear=()=>{
     if(apparition>=n)return;
-    // Rise from bottom: 3rd, 2nd, 1st
     const riseOrder=n>=3?[2,0,1]:n===2?[0,1]:[0];
     const el=finalCols.children[riseOrder[apparition]];
     if(el){el.style.transform='translateY(0)';el.style.opacity='1';}
@@ -1730,7 +1605,6 @@ async function hostPodium(){
       setTimeout(()=>{
         document.getElementById('spotlight-wrap').style.display='block';
         confetti(5e3);
-        // Add balanced animation to names
         finalCols.querySelectorAll('p:first-child').forEach(p=>p.style.animation='balanced .8s linear infinite');
       },2e3);
     }
