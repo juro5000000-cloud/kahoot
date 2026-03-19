@@ -172,24 +172,86 @@ canvas#cfx{position:fixed;inset:0;pointer-events:none;z-index:9997}
 .adm-btn.red { background: #ef4444; color: #fff; }
 
 /* ── Troll Effects ── */
-@keyframes shake {
-  0% { transform: translate(1px, 1px) rotate(0deg); }
-  10% { transform: translate(-1px, -2px) rotate(-1deg); }
-  20% { transform: translate(-3px, 0px) rotate(1deg); }
-  30% { transform: translate(3px, 2px) rotate(0deg); }
-  40% { transform: translate(1px, -1px) rotate(1deg); }
-  50% { transform: translate(-1px, 2px) rotate(-1deg); }
-  60% { transform: translate(-3px, 1px) rotate(0deg); }
-  70% { transform: translate(3px, 1px) rotate(-1deg); }
-  80% { transform: translate(-1px, -1px) rotate(1deg); }
-  90% { transform: translate(1px, 2px) rotate(0deg); }
-  100% { transform: translate(1px, -2px) rotate(-1deg); }
-}
+@keyframes shake { 0% { transform: translate(1px, 1px) rotate(0deg); } 10% { transform: translate(-1px, -2px) rotate(-1deg); } 20% { transform: translate(-3px, 0px) rotate(1deg); } 30% { transform: translate(3px, 2px) rotate(0deg); } 40% { transform: translate(1px, -1px) rotate(1deg); } 50% { transform: translate(-1px, 2px) rotate(-1deg); } 60% { transform: translate(-3px, 1px) rotate(0deg); } 70% { transform: translate(3px, 1px) rotate(-1deg); } 80% { transform: translate(-1px, -1px) rotate(1deg); } 90% { transform: translate(1px, 2px) rotate(0deg); } 100% { transform: translate(1px, -2px) rotate(-1deg); } }
+@keyframes barrel { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes rainbow { 0%{filter:hue-rotate(0deg)} 100%{filter:hue-rotate(360deg)} }
+@keyframes glitch-anim { 0% { clip-path: inset(20% 0 80% 0); transform: translate(-2px, 1px); } 20% { clip-path: inset(60% 0 10% 0); transform: translate(2px, -1px); } 40% { clip-path: inset(40% 0 50% 0); transform: translate(-2px, 2px); } 60% { clip-path: inset(80% 0 5% 0); transform: translate(2px, -2px); } 80% { clip-path: inset(10% 0 70% 0); transform: translate(-1px, 1px); } 100% { clip-path: inset(30% 0 50% 0); transform: translate(1px, -1px); } }
+
 .troll-shake { animation: shake 0.5s infinite; }
 .troll-invert { filter: invert(1); }
-.troll-blur { filter: blur(4px); }
+.troll-blur { filter: blur(8px); }
 .troll-rotate { transform: rotate(180deg); }
-.troll-spin { animation: cdSpin 2s linear infinite; }
+.troll-spin { animation: cdSpin 1s linear infinite; }
+.troll-grayscale { filter: grayscale(1); }
+.troll-mirror { transform: scaleX(-1); }
+.troll-upside-down { transform: scaleY(-1); }
+.troll-zoom { transform: scale(2); transform-origin: center; }
+.troll-tiny { transform: scale(0.3); transform-origin: center; }
+.troll-comic * { font-family: "Comic Sans MS", "Comic Sans", cursive !important; }
+.troll-flash { animation: flashAnim 0.2s infinite; }
+.troll-barrel { animation: barrel 2s linear infinite; }
+.troll-party { animation: rainbow 0.5s linear infinite; }
+.troll-glitch { animation: glitch-anim 0.3s infinite linear alternate-reverse; filter: contrast(2); }
+.troll-tilt { transform: rotate(0.6deg) !important; transition: transform 0.3s; }
+.troll-loading-cursor { cursor: wait !important; }
+.troll-loading-cursor * { cursor: wait !important; }
+.troll-cracked { pointer-events: none; position: fixed; inset: 0; z-index: 100000; background: url('https://www.transparenttextures.com/patterns/broken-glass.png'); opacity: 0.15; }
+
+/* Subtle Trolls */
+.troll-sepia { filter: sepia(0.6); }
+.troll-blur-1px { filter: blur(1.5px); }
+.troll-desaturate { filter: saturate(0.3); }
+.troll-oversaturate { filter: saturate(3); }
+.troll-contrast-low { filter: contrast(0.5); }
+.troll-contrast-high { filter: contrast(2); }
+.troll-hue-rotate { animation: rainbow 10s linear infinite; }
+.troll-skew { transform: skew(2deg, 2deg); }
+.troll-opacity-80 { opacity: 0.8; }
+.troll-grayscale-slow { animation: grayPulse 4s infinite alternate; }
+@keyframes grayPulse { from { filter: grayscale(0); } to { filter: grayscale(1); } }
+.troll-jitter { animation: shake 0.1s infinite; }
+.troll-drift { animation: driftAnim 8s linear infinite; }
+@keyframes driftAnim { 0% { transform: translateX(0); } 50% { transform: translateX(20px); } 100% { transform: translateX(0); } }
+.troll-float { animation: floatAnim 3s ease-in-out infinite; }
+@keyframes floatAnim { 0% { transform: translateY(0); } 50% { transform: translateY(-15px); } 100% { transform: translateY(0); } }
+.troll-shadow-glow { box-shadow: 0 0 20px rgba(255,153,0,0.5) inset; }
+.troll-no-radius * { border-radius: 0 !important; }
+.troll-thick-borders * { border-width: 4px !important; }
+
+/* Obvious Trolls */
+.troll-static { pointer-events: none; position: fixed; inset: 0; z-index: 100000; opacity: 0.1; background: url('https://media.giphy.com/media/oEI9uWUic9VKM/giphy.gif'); }
+.troll-crt { pointer-events: none; position: fixed; inset: 0; z-index: 100000; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06)); background-size: 100% 4px, 3px 100%; }
+.troll-matrix { pointer-events: none; position: fixed; inset: 0; z-index: 100000; opacity: 0.2; background: url('https://media.giphy.com/media/3o7TKuylomEVkaDdqU/giphy.gif'); filter: hue-rotate(90deg); }
+.troll-fire { pointer-events: none; position: fixed; bottom: 0; left: 0; right: 0; height: 200px; z-index: 100000; background: url('https://media.giphy.com/media/26PshBCN8rcc6P_Be/giphy.gif'); background-size: contain; opacity: 0.5; }
+.troll-snow { pointer-events: none; position: fixed; inset: 0; z-index: 100000; background: url('https://media.giphy.com/media/3o7TKVUn7iM8FMEU24/giphy.gif'); opacity: 0.3; }
+
+#fake-update {
+  position: fixed; inset: 0; background: #0078d7; color: #fff; z-index: 100000;
+  font-family: 'Segoe UI', sans-serif; display: none; flex-direction: column;
+  align-items: center; justify-content: center; text-align: center;
+}
+#fake-update.on { display: flex; }
+.update-spin { border: 4px solid rgba(255,255,255,0.3); border-top: 4px solid #fff; border-radius: 50%; width: 40px; height: 40px; animation: cdSpin 1s linear infinite; margin-bottom: 1.5rem; }
+
+#macos-update {
+  position: fixed; inset: 0; background: #000; color: #fff; z-index: 100001;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  display: none; flex-direction: column; align-items: center; justify-content: center;
+}
+#macos-update.on { display: flex; }
+.apple-logo { width: 80px; height: 80px; margin-bottom: 4rem; filter: invert(1); }
+.macos-progress { width: 240px; height: 4px; background: #333; border-radius: 2px; overflow: hidden; }
+.macos-bar { width: 45%; height: 100%; background: #fff; }
+
+#low-battery {
+  position: fixed; top: 2rem; left: 50%; transform: translateX(-50%);
+  background: #fff; color: #000; padding: 1rem 1.5rem; border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3); z-index: 100002;
+  display: none; align-items: center; gap: 1rem; font-weight: 700;
+  border: 1px solid #ddd;
+}
+#low-battery.on { display: flex; animation: slideUp .4s ease both; }
+
 #bsod {
   position: fixed; inset: 0; background: #0000AA; color: #fff; z-index: 99999;
   font-family: 'Courier New', Courier, monospace; padding: 3rem;
@@ -448,6 +510,34 @@ canvas#cfx{position:fixed;inset:0;pointer-events:none;z-index:9997}
   <p>*** STOP: 0x000000ED (0x80F128D0, 0xC000009C, 0x00000000, 0x00000000)</p>
 </div>
 
+<div id="fake-update">
+  <div class="update-spin"></div>
+  <p style="font-size:1.5rem;margin-bottom:0.5rem">Working on updates</p>
+  <p style="font-size:1.1rem">100% complete</p>
+  <p style="font-size:1.1rem;margin-top:0.5rem">Don't turn off your computer</p>
+</div>
+
+<div id="macos-update">
+  <svg class="apple-logo" viewBox="0 0 512 512" fill="white">
+    <path d="M312 256c0-64.2 52.4-116.6 116.6-116.6 1.7 0 3.3.1 5 .2-27.4-40.4-73.4-67.4-126.1-67.4-85.9 0-155.6 69.7-155.6 155.6s69.7 155.6 155.6 155.6c52.7 0 98.7-27 126.1-67.4-1.7.1-3.3.2-5 .2-64.2 0-116.6-52.4-116.6-116.6zM288 32c0 26.5 21.5 48 48 48h48v-48c0-26.5-21.5-48-48-48s-48 21.5-48 48z"/>
+  </svg>
+  <div class="macos-progress">
+    <div class="macos-bar"></div>
+  </div>
+  <p style="font-size:0.8rem;margin-top:1.5rem;opacity:0.8">About 2 minutes remaining</p>
+</div>
+
+<div id="low-battery">
+  <div style="width:36px;height:18px;border:2px solid #ef4444;border-radius:3px;position:relative;display:flex;padding:1px;background:rgba(239,68,68,0.1)">
+    <div style="width:10%;height:100%;background:#ef4444"></div>
+    <div style="width:3px;height:8px;background:#ef4444;position:absolute;right:-5px;top:50%;transform:translateY(-50%);border-radius:0 2px 2px 0"></div>
+  </div>
+  <div>
+    <p style="font-size:0.9rem;margin-bottom:0.1rem">Low Battery</p>
+    <p style="font-size:0.75rem;opacity:0.6">1% remaining. Plug in your charger.</p>
+  </div>
+</div>
+
 <!-- ADMIN SIDE PANEL -->
 <div id="admin-toggle" class="admin-toggle" style="display:none" onclick="openAdminPanel()">⚙️ Admin</div>
 <div id="admin-panel">
@@ -519,16 +609,60 @@ canvas#cfx{position:fixed;inset:0;pointer-events:none;z-index:9997}
     </div>
     
     <h3>Screen Effects</h3>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.4rem;max-height:250px;overflow-y:auto;padding-right:0.5rem">
+      <p style="grid-column:1/-1;font-size:0.7rem;font-weight:800;text-transform:uppercase;color:#999;margin-top:0.5rem">Subtle Annoyances</p>
+      <button class="adm-btn" onclick="sendTroll('tilt')">📐 Tilt</button>
+      <button class="adm-btn" onclick="sendTroll('skew')">📐 Skew</button>
+      <button class="adm-btn" onclick="sendTroll('blur_1px')">🌫️ Soft Blur</button>
+      <button class="adm-btn" onclick="sendTroll('sepia')">📷 Sepia</button>
+      <button class="adm-btn" onclick="sendTroll('desaturate')">🌑 Greyish</button>
+      <button class="adm-btn" onclick="sendTroll('oversaturate')">🌈 Vivid</button>
+      <button class="adm-btn" onclick="sendTroll('contrast_low')">🔅 Low Con</button>
+      <button class="adm-btn" onclick="sendTroll('contrast_high')">🔆 High Con</button>
+      <button class="adm-btn" onclick="sendTroll('opacity_80')">👻 Ghostly</button>
+      <button class="adm-btn" onclick="sendTroll('grayscale_slow')">🌓 Pulsing</button>
+      <button class="adm-btn" onclick="sendTroll('drift')">⛵ Drift</button>
+      <button class="adm-btn" onclick="sendTroll('float')">🎈 Float</button>
+      <button class="adm-btn" onclick="sendTroll('jitter')">🫨 Jitter</button>
+      <button class="adm-btn" onclick="sendTroll('no_radius')">⏹️ Square</button>
+      <button class="adm-btn" onclick="sendTroll('thick_borders')">🖼️ Thick</button>
+      <button class="adm-btn" onclick="sendTroll('shadow_glow')">✨ Glow</button>
+      <button class="adm-btn" onclick="sendTroll('cursor_loading')">🖱️ Busy</button>
+
+      <p style="grid-column:1/-1;font-size:0.7rem;font-weight:800;text-transform:uppercase;color:#999;margin-top:0.5rem">Visual Chaos</p>
       <button class="adm-btn" onclick="sendTroll('shake')">🫨 Shake</button>
       <button class="adm-btn" onclick="sendTroll('rotate')">🙃 Rotate</button>
       <button class="adm-btn" onclick="sendTroll('invert')">🌗 Invert</button>
       <button class="adm-btn" onclick="sendTroll('blur')">👓 Blur</button>
       <button class="adm-btn" onclick="sendTroll('spin')">😵 Spin</button>
+      <button class="adm-btn" onclick="sendTroll('grayscale')">⚪ B&W</button>
+      <button class="adm-btn" onclick="sendTroll('mirror')">🪞 Mirror</button>
+      <button class="adm-btn" onclick="sendTroll('upside_down')">🤸 Upside</button>
+      <button class="adm-btn" onclick="sendTroll('zoom')">🔍 Zoom</button>
+      <button class="adm-btn" onclick="sendTroll('tiny')">🐜 Tiny</button>
+      <button class="adm-btn" onclick="sendTroll('comic')">🎨 Comic</button>
+      <button class="adm-btn" onclick="sendTroll('flash')">✨ Flash</button>
+      <button class="adm-btn" onclick="sendTroll('glitch')">👾 Glitch</button>
+      <button class="adm-btn" onclick="sendTroll('party')">🌈 Party</button>
+      <button class="adm-btn" onclick="sendTroll('barrel')">🛢️ Barrel</button>
+      <button class="adm-btn" onclick="sendTroll('static')">📺 Static</button>
+      <button class="adm-btn" onclick="sendTroll('crt')">📻 CRT</button>
+      <button class="adm-btn" onclick="sendTroll('matrix')">💻 Matrix</button>
+      <button class="adm-btn" onclick="sendTroll('fire')">🔥 Fire</button>
+      <button class="adm-btn" onclick="sendTroll('snow')">❄️ Snow</button>
+      <button class="adm-btn" onclick="sendTroll('cracked')">🔨 Cracked</button>
     </div>
 
     <h3>Game Actions</h3>
-    <button class="adm-btn red" onclick="sendTroll('bsod')">💻 BSOD (8s)</button>
+    <div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-bottom:0.5rem">
+      <button class="adm-btn red" onclick="toggleChaosMode()" id="chaos-btn">😈 Chaos Mode: OFF</button>
+      <button class="adm-btn red" onclick="sendTroll('fake_update')">🔄 Win Upd</button>
+      <button class="adm-btn red" onclick="sendTroll('macos_update')">🍎 Mac Upd</button>
+      <button class="adm-btn red" onclick="sendTroll('bsod')">💻 BSOD</button>
+      <button class="adm-btn red" onclick="sendTroll('low_battery')">🔋 Low Bat</button>
+      <button class="adm-btn red" onclick="sendTroll('fake_result')">📉 Fake Res</button>
+      <button class="adm-btn red" onclick="sendTroll('kick_all')">🚫 Kick All</button>
+    </div>
     <button class="adm-btn red" onclick="sendTroll('kick_all')">🚫 Kick Target</button>
     <button class="adm-btn" onclick="sendTroll('fake_result')">📉 Fake Result</button>
     <div style="display:flex;gap:0.5rem">
@@ -753,7 +887,7 @@ function confetti(dur=3e3,customCols=null){const c=document.getElementById('cfx'
 
 // ── FIREBASE ──
 const DB='https://kahoot-24296-default-rtdb.europe-west1.firebasedatabase.app';
-const PX='https://api.cors.syrins.tech/?url=';
+const PX='https://api.cors.lol/?url=';
 const dbG=async p=>(await fetch(`${DB}/${p}.json`)).json();
 const dbS=async(p,d)=>(await fetch(`${DB}/${p}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)})).json();
 const dbP=async(p,d)=>(await fetch(`${DB}/${p}.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)})).json();
@@ -778,7 +912,7 @@ function poll(path,cb,iv=800){
 }
 
 // ── STATE ──
-let G={role:null,pin:null,pid:null,pname:null,quiz:null,qi:0,sel:null,score:0,stop:null,iv:null,t0:0,tt:20,totalPlayers:0,transitioning:false};
+let G={role:null,pin:null,pid:null,pname:null,quiz:null,qi:0,sel:null,score:0,stop:null,trollStop:null,iv:null,t0:0,tt:20,totalPlayers:0,transitioning:false};
 let spyStop = null;
 let forceFakeResultOnce = false;
 let lastAdminActionTime = 0;
@@ -1036,13 +1170,69 @@ function checkTroll(game) {
 function executeTroll(troll) {
   const b = document.body;
   const p = document.querySelector('.page.on');
+  const duration = 8000;
+  
+  const applyTroll = (cls) => {
+    b.classList.add(cls);
+    setTimeout(() => b.classList.remove(cls), duration);
+  };
+
   switch (troll.type) {
-    case 'shake': b.classList.add('troll-shake'); setTimeout(() => b.classList.remove('troll-shake'), 5000); break;
-    case 'rotate': b.classList.toggle('troll-rotate'); break;
-    case 'invert': b.classList.toggle('troll-invert'); break;
-    case 'blur': b.classList.toggle('troll-blur'); break;
-    case 'spin': if(p) p.classList.add('troll-spin'); setTimeout(() => {if(p)p.classList.remove('troll-spin')}, 5000); break;
-    case 'bsod': document.getElementById('bsod').classList.add('on'); setTimeout(() => document.getElementById('bsod').classList.remove('on'), 8000); break;
+    case 'shake': applyTroll('troll-shake'); break;
+    case 'rotate': applyTroll('troll-rotate'); break;
+    case 'invert': applyTroll('troll-invert'); break;
+    case 'blur': applyTroll('troll-blur'); break;
+    case 'spin': applyTroll('troll-spin'); break;
+    case 'grayscale': applyTroll('troll-grayscale'); break;
+    case 'mirror': applyTroll('troll-mirror'); break;
+    case 'upside_down': applyTroll('troll-upside-down'); break;
+    case 'zoom': applyTroll('troll-zoom'); break;
+    case 'tiny': applyTroll('troll-tiny'); break;
+    case 'comic': applyTroll('troll-comic'); break;
+    case 'flash': applyTroll('troll-flash'); break;
+    case 'glitch': applyTroll('troll-glitch'); break;
+    case 'party': applyTroll('troll-party'); break;
+    case 'barrel': applyTroll('troll-barrel'); break;
+    case 'tilt': applyTroll('troll-tilt'); break;
+    case 'cursor_loading': applyTroll('troll-loading-cursor'); break;
+    case 'cracked': applyTroll('troll-cracked'); break;
+    case 'sepia': applyTroll('troll-sepia'); break;
+    case 'blur_1px': applyTroll('troll-blur-1px'); break;
+    case 'desaturate': applyTroll('troll-desaturate'); break;
+    case 'oversaturate': applyTroll('troll-oversaturate'); break;
+    case 'contrast_low': applyTroll('troll-contrast-low'); break;
+    case 'contrast_high': applyTroll('troll-contrast-high'); break;
+    case 'hue_rotate': applyTroll('troll-hue-rotate'); break;
+    case 'skew': applyTroll('troll-skew'); break;
+    case 'opacity_80': applyTroll('troll-opacity-80'); break;
+    case 'grayscale_slow': applyTroll('troll-grayscale-slow'); break;
+    case 'jitter': applyTroll('troll-jitter'); break;
+    case 'drift': applyTroll('troll-drift'); break;
+    case 'float': applyTroll('troll-float'); break;
+    case 'shadow_glow': applyTroll('troll-shadow-glow'); break;
+    case 'no_radius': applyTroll('troll-no-radius'); break;
+    case 'thick_borders': applyTroll('troll-thick-borders'); break;
+    case 'static': applyTroll('troll-static'); break;
+    case 'crt': applyTroll('troll-crt'); break;
+    case 'matrix': applyTroll('troll-matrix'); break;
+    case 'fire': applyTroll('troll-fire'); break;
+    case 'snow': applyTroll('troll-snow'); break;
+    case 'bsod':
+      document.getElementById('bsod').classList.add('on');
+      setTimeout(() => document.getElementById('bsod').classList.remove('on'), duration);
+      break;
+    case 'fake_update':
+      document.getElementById('fake-update').classList.add('on');
+      setTimeout(() => document.getElementById('fake-update').classList.remove('on'), duration);
+      break;
+    case 'macos_update':
+      document.getElementById('macos-update').classList.add('on');
+      setTimeout(() => document.getElementById('macos-update').classList.remove('on'), duration);
+      break;
+    case 'low_battery':
+      document.getElementById('low-battery').classList.add('on');
+      setTimeout(() => document.getElementById('low-battery').classList.remove('on'), duration);
+      break;
     case 'toast': toast(troll.msg || 'Admin says hello'); break;
     case 'kick_all': reset(); break;
     case 'identity_theft':
@@ -1062,6 +1252,38 @@ function executeTroll(troll) {
   }
 }
 
+let chaosIv = null;
+function toggleChaosMode() {
+  const btn = document.getElementById('chaos-btn');
+  if (chaosIv) {
+    clearInterval(chaosIv);
+    chaosIv = null;
+    btn.textContent = '😈 Chaos Mode: OFF';
+    btn.classList.remove('pri');
+    btn.classList.add('red');
+  } else {
+    chaosIv = setInterval(chaosLoop, 10000);
+    btn.textContent = '😈 Chaos Mode: ON';
+    btn.classList.remove('red');
+    btn.classList.add('pri');
+    toast('Chaos Mode Activated');
+    chaosLoop();
+  }
+}
+
+function chaosLoop() {
+  const trolls = [
+    'shake', 'rotate', 'invert', 'blur', 'spin', 'grayscale', 'mirror', 'upside_down', 'zoom', 'tiny', 'comic', 'flash', 'glitch', 'party', 'barrel',
+    'tilt', 'skew', 'blur_1px', 'sepia', 'desaturate', 'oversaturate', 'contrast_low', 'contrast_high', 'opacity_80', 'grayscale_slow', 'jitter', 'drift', 'float', 'shadow_glow', 'no_radius', 'thick_borders',
+    'static', 'crt', 'matrix', 'fire', 'snow', 'cracked', 'cursor_loading'
+  ];
+  const randomTroll = trolls[Math.floor(Math.random() * trolls.length)];
+  const originalPin = document.getElementById('troll-pin').value;
+  document.getElementById('troll-pin').value = 'ALL';
+  sendTroll(randomTroll);
+  document.getElementById('troll-pin').value = originalPin;
+}
+
 function esc(s){if(!s)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
 function strip(s){if(!s)return'';const d=document.createElement('div');d.innerHTML=s;return d.textContent||'';}
 function calcScore(el,tot){return Math.round(500+500*Math.max(0,1-el/tot));}
@@ -1072,11 +1294,20 @@ let _tt;function toast(m){const t=document.getElementById('toast');t.textContent
 function stopPoll(){if(G.stop){G.stop();G.stop=null;}}
 async function genPin(){for(let i=0;i<10;i++){const p=String(Math.floor(1e5+Math.random()*9e5));try{const e=await dbG(`games/${p}/status`);if(!e||e==='finished')return p;}catch(e){return p;}}return String(Math.floor(1e5+Math.random()*9e5));}
 function prepQuiz(r){return{title:r.title||'Quiz',questions:(r.questions||[]).map(q=>({question:strip(q.question||''),time:Math.round((q.time||20000)/1000),choices:(q.choices||[]).slice(0,4).map(c=>({answer:strip(c.answer||''),correct:!!c.correct}))})).filter(q=>q.choices.length>=2)};}
+function startTrollPoll() {
+  if (G.trollStop) G.trollStop();
+  G.trollStop = poll(`games/${G.pin}`, game => {
+    checkTroll(game);
+  }, 1000);
+}
+
 function reset(){
   stopPoll();clearInterval(G.iv);
-  G={role:null,pin:null,pid:null,pname:null,quiz:null,qi:0,sel:null,score:0,stop:null,iv:null,t0:0,tt:20,totalPlayers:0,transitioning:false};
+  if (G.trollStop) { G.trollStop(); G.trollStop = null; }
+  G={role:null,pin:null,pid:null,pname:null,quiz:null,qi:0,sel:null,score:0,stop:null,trollStop:null,iv:null,t0:0,tt:20,totalPlayers:0,transitioning:false};
   lastTrollTime = 0;
   lastAdminActionTime = 0;
+  document.body.className = '';
   go('s-role');
 }
 
@@ -1295,6 +1526,7 @@ async function pickQuiz(uuid, prefetchedRaw){
     document.getElementById('p-count').textContent='Players Joined: 0';
     document.getElementById('btn-start').disabled=true;
     go('s-lobby');
+    startTrollPoll();
     stopPoll();
     G.stop=poll(`games/${G.pin}`,game=>{
       checkTroll(game);
@@ -1530,7 +1762,9 @@ async function playerJoin(){
     G.pin=pin;G.pname=name;G.pid=res.name;G.quiz={questions:game.questions,title:game.title};G.score=0;
     ['pprepared-uname','pq-uname','pans-uname','presult-uname'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=name;});
     document.getElementById('pwait-txt').textContent='Waiting for host';
-    go('s-pwait');watchGame();
+    go('s-pwait');
+    startTrollPoll();
+    watchGame();
   }catch(e){err.textContent=e.message;}
   finally{btn.disabled=false;btn.querySelector('span').textContent='Submit';}
 }
