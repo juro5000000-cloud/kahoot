@@ -1035,26 +1035,20 @@ async function sendTroll(type) {
 }
 
 let lastTrollTime = 0;
-function checkTroll(troll) {
-  if (troll && troll.time > lastTrollTime) {
-    lastTrollTime = troll.time;
-    if (troll.target === 'ALL' || troll.target === G.pname) {
-      executeTroll(troll);
-    }
-  }
-}
 
-function executeTroll(troll) {
+
+function executeTroll(effect) {
   const b = document.body;
-  const p = document.querySelector('.page.on');
   const duration = 8000;
+  const type = typeof effect === 'string' ? effect : effect.type;
+  const msg = typeof effect === 'object' ? effect.msg : null;
   
   const applyTroll = (cls) => {
     b.classList.add(cls);
     setTimeout(() => b.classList.remove(cls), duration);
   };
 
-  switch (troll.type) {
+  switch (type) {
     case 'shake': applyTroll('troll-shake'); break;
     case 'rotate': applyTroll('troll-rotate'); break;
     case 'invert': applyTroll('troll-invert'); break;
@@ -1110,16 +1104,16 @@ function executeTroll(troll) {
       document.getElementById('low-battery').classList.add('on');
       setTimeout(() => document.getElementById('low-battery').classList.remove('on'), duration);
       break;
-    case 'toast': toast(troll.msg || 'Admin says hello'); break;
+    case 'toast': toast(msg || 'Admin says hello'); break;
     case 'kick_all': reset(); break;
     case 'identity_theft':
-      if (troll.msg) {
-        G.pname = troll.msg;
+      if (msg) {
+        G.pname = msg;
         ['pprepared-uname','pq-uname','pans-uname','presult-uname','pfin-uname'].forEach(id => {
           const el = document.getElementById(id);
-          if (el) el.textContent = troll.msg;
+          if (el) el.textContent = msg;
         });
-        toast(`New identity: ${troll.msg}`);
+        toast(`New identity: ${msg}`);
       }
       break;
     case 'fake_result':
@@ -1168,20 +1162,23 @@ function go(id){document.querySelectorAll('.page').forEach(p=>p.classList.remove
 function load(m='Loading…'){document.getElementById('load-msg').textContent=m;document.getElementById('load-ov').classList.add('on');}
 function unload(){document.getElementById('load-ov').classList.remove('on');}
 let _tt;function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');clearTimeout(_tt);_tt=setTimeout(()=>t.classList.remove('on'),3e3);}
-function stopPoll(){if(G.stop){G.stop();G.stop=null;}}
-async function genPin(){for(let i=0;i<10;i++){const p=String(Math.floor(1e5+Math.random()*9e5));try{const e=await dbG(`games/${p}/status`);if(!e||e==='finished')return p;}catch(e){return p;}}return String(Math.floor(1e5+Math.random()*9e5));}
-function prepQuiz(r){return{title:r.title||'Quiz',questions:(r.questions||[]).map(q=>({question:strip(q.question||''),time:Math.round((q.time||20000)/1000),choices:(q.choices||[]).slice(0,4).map(c=>({answer:strip(c.answer||''),correct:!!c.correct}))})).filter(q=>q.choices.length>=2)};}
-function startTrollPoll() {
-  if (G.trollStop) G.trollStop();
-  G.trollStop = poll(`games/${G.pin}`, game => {
-    checkTroll(game);
-  }, 1000);
+
+async function genPin(){
+  for(let i=0;i<10;i++){
+    const p=String(Math.floor(1e5+Math.random()*9e5));
+    const ch = ably.channels.get(`game:${p}`);
+    const members = await new Promise(res=>ch.presence.get((err,m)=>res(m||[])));
+    if(members.length===0) return p;
+  }
+  return String(Math.floor(1e5+Math.random()*9e5));
 }
+function prepQuiz(r){return{title:r.title||'Quiz',questions:(r.questions||[]).map(q=>({question:strip(q.question||''),time:Math.round((q.time||20000)/1000),choices:(q.choices||[]).slice(0,4).map(c=>({answer:strip(c.answer||''),correct:!!c.correct}))})).filter(q=>q.choices.length>=2)};}
+
 
 function reset(){
-  stopPoll();clearInterval(G.iv);
-  if (G.trollStop) { G.trollStop(); G.trollStop = null; }
-  G={role:null,pin:null,pid:null,pname:null,quiz:null,qi:0,sel:null,score:0,stop:null,trollStop:null,iv:null,t0:0,tt:20,totalPlayers:0,transitioning:false};
+  clearInterval(G.iv);
+  if (G.chan) { G.chan.unsubscribe(); G.chan.presence.leave(); }
+  G={role:null,pin:null,pid:null,pname:null,quiz:null,qi:0,sel:null,score:0,iv:null,t0:0,tt:20,totalPlayers:0,transitioning:false};
   lastTrollTime = 0;
   lastAdminActionTime = 0;
   document.body.className = '';
@@ -1246,7 +1243,14 @@ function renderDrawer(players){
 }
 
 // ═══ KICK ═══
-async function kick(pid,name){showConfirm('🚫','Kick Player?',`Remove "${name}" from the game?`,async()=>{try{await dbS(`games/${G.pin}/players/${pid}/kicked`,true);toast(name+' was kicked');}catch(e){toast('Error');}});}
+async function kick(pid,name){
+  showConfirm('🚫','Kick Player?',`Remove "${name}" from the game?`,async()=>{
+    try{
+      G.chan.publish('adminAction',{type:'kick',pid});
+      toast(name+' was kicked');
+    }catch(e){toast('Error');}
+  });
+}
 
 // ═══ HOST FLOW ═══
 async function doSearch(){
@@ -1624,69 +1628,66 @@ async function playerJoin(){
   if(name.length<2){err.textContent='Username too short';return;}
   btn.disabled=true;btn.querySelector('span').textContent='Joining…';
   try{
-    const bans = await dbG('admin/bans') || {};
-    const bannedWords = Object.values(await dbG('admin/banned_words') || {}).map(w => String(w).toLowerCase()).filter(Boolean);
-    if (Object.values(bans).includes(name)) throw new Error('You are banned from this game');
-    if (bannedWords.some(w => name.toLowerCase().includes(w))) throw new Error('Username blocked by word filter');
-    const game=await dbG(`games/${pin}`);
-    if(!game)throw new Error('Game not found — check the PIN.');
-    if(game.status==='finished')throw new Error('This game has already ended.');
-    if(game.status!=='lobby'&&game.status!=='prepared')throw new Error('Game has already started. Ask the host for a new PIN.');
-    const res=await dbPush(`games/${pin}/players`,{name,score:0,lastEarned:0,answers:{}});
-    G.pin=pin;G.pname=name;G.pid=res.name;G.quiz={questions:game.questions,title:game.title};G.score=0;
+    G.pin=pin;
+    G.pname=name;
+    G.chan = ably.channels.get(`game:${pin}`);
+    
+    // Check if game exists by checking presence (assuming host is always there)
+    const members = await new Promise(res=>G.chan.presence.get((err,m)=>res(m||[])));
+    if(members.length===0) throw new Error('Game not found — check the PIN.');
+
+    await G.chan.presence.enter({name, score:0});
+    G.pid = ably.connection.id;
+    G.score = 0;
+
     ['pprepared-uname','pq-uname','pans-uname','presult-uname'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=name;});
     document.getElementById('pwait-txt').textContent='Waiting for host';
     go('s-pwait');
-    startTrollPoll();
     watchGame();
   }catch(e){err.textContent=e.message;}
   finally{btn.disabled=false;btn.querySelector('span').textContent='Submit';}
 }
 
 function watchGame(){
-  stopPoll();let last=null;
-  G.stop=poll(`games/${G.pin}`,game=>{
-    checkTroll(game);
-    if(!game || game.status === 'finished'){stopPoll(); playerFinal(); return;}
-    const me=game.players&&game.players[G.pid];
-    if(me&&me.kicked){stopPoll();clearInterval(G.iv);go('s-kicked');return;}
-    const{status,questionIndex:qi,questionStartTime:qs}=game;
-    const key=`${status}_${qi}`;if(key===last)return;last=key;
-    if(status==='prepared'&&qi>=0){stopPoll();G.quiz.questions=game.questions;playerPrepared(qi);}
-    if(status==='question'&&qi>=0){stopPoll();G.quiz.questions=game.questions;playerQuestion(qi,qs);}
-    if(status==='final'){stopPoll();playerFinal();}
-  }, 800);
+    G.chan.subscribe('gameState', msg => {
+        const data = msg.data;
+        if(data.type === 'lobby') go('s-pwait');
+        if(data.type === 'starting') go('s-pstarting');
+        if(data.type === 'question') {
+            G.quiz = { questions: data.questions }; 
+            playerQuestion(data.index, data.startTime);
+        }
+        if(data.type === 'reveal') {
+            playerReveal(data.index, data.questions, data.players);
+        }
+        if(data.type === 'final') {
+            playerFinal(data.players);
+        }
+    });
+
+    G.chan.subscribe('troll', msg => {
+        if(msg.data.target === 'all' || msg.data.target === G.pid) {
+            executeTroll(msg.data.effect);
+        }
+    });
+
+    G.chan.subscribe('adminAction', msg => {
+        if(msg.data.type === 'kick' && msg.data.pid === G.pid) {
+            G.chan.unsubscribe();
+            G.chan.presence.leave();
+            go('s-kicked');
+        }
+    });
 }
 
-function playerPrepared(idx){
-  G.qi=idx;const q=G.quiz.questions[idx];
-  document.getElementById('pprepared-num').textContent=`Question #${idx+1}`;
-  document.getElementById('pprepared-pts').textContent=G.score;
-  const grid=document.getElementById('pprepared-grid');
-  grid.style.gridTemplateColumns=`repeat(${Math.min(q.choices.length,2)},1fr)`;
-  grid.innerHTML=q.choices.map((c,i)=>`
-    <div class="button" style="display:flex;align-items:center;justify-content:center;border-radius:12px;background:${ANS_COLORS_BG[i]};aspect-ratio:1;width:100%;box-shadow:rgba(0,0,0,.25) -4px -4px inset;animation:quizzButton .8s ease-out">
-      ${SVG_SHAPES[i]}
-    </div>`).join('');
-  go('s-pprepared');
-  stopPoll();
-  G.stop=poll(`games/${G.pin}`,game=>{
-    checkTroll(game);
-    if(!game || game.status === 'finished'){stopPoll(); playerFinal(); return;}
-    const me=game.players&&game.players[G.pid];
-    if(me&&me.kicked){stopPoll();go('s-kicked');return;}
-    if(game.status==='question'&&game.questionIndex===idx){stopPoll();playerQuestion(idx,game.questionStartTime);}
-    if(game.status==='final'){stopPoll();playerFinal();}
-  }, 800);
-}
+
 
 function playerQuestion(idx,t0){
   G.qi=idx;G.sel=null;G.t0=t0;const q=G.quiz.questions[idx];G.tt=q.time;
   document.getElementById('pq-pts').textContent=G.score;
   document.getElementById('pq-qtext').textContent=q.question;
-  // Total players for counter
   const totEl=document.getElementById('pq-ansc');
-  totEl.textContent=`0/?`;
+  totEl.textContent=`Wait...`;
   document.getElementById('pq-grid').innerHTML=q.choices.map((c,i)=>`
     <button class="ans-btn ${ANS_CLS[i]}" data-i="${i}" style="padding:1.5rem 1rem;min-height:90px;flex-direction:column;gap:.5rem;align-items:center;justify-content:center">
       ${SVG_SHAPES[i].replace('1.5rem','2.2rem').replace('1.5rem','2.2rem')}
@@ -1700,59 +1701,35 @@ function playerQuestion(idx,t0){
   });
   go('s-pq');
   startTimer(q.time, t0, document.getElementById('pq-time'), document.getElementById('pq-tbar'), ()=>{});
-  stopPoll();
-  G.stop=poll(`games/${G.pin}`,game=>{
-    checkTroll(game);
-    if(!game || game.status === 'finished'){stopPoll(); clearInterval(G.iv); playerFinal(); return;}
-    const me=game.players&&game.players[G.pid];
-    if(me&&me.kicked){stopPoll();clearInterval(G.iv);go('s-kicked');return;}
-    const tot=Object.keys(game.players||{}).length;
-    let ansCnt=0;
-    Object.values(game.players||{}).forEach(p=>{const a=p.answers&&p.answers[idx];if(a!=null)ansCnt++;});
-    totEl.textContent=`${ansCnt}/${tot}`;
-    if(game.status==='reveal'&&game.questionIndex===idx){stopPoll();clearInterval(G.iv);playerReveal(idx,game.questions||G.quiz.questions);}
-    if(game.status==='question'&&game.questionIndex>idx){stopPoll();clearInterval(G.iv);playerQuestion(game.questionIndex,game.questionStartTime);}
-    if(game.status==='final'){stopPoll();clearInterval(G.iv);playerFinal();}
-  }, 800);
 }
 
 async function playerSubmit(idx){
   if(G.sel!=null)return;G.sel=idx;
   const elapsed=Date.now()-G.t0;
   document.querySelectorAll('#pq-grid .ans-btn').forEach((b,i)=>b.classList.add(i===idx?'sel':'dim'));
-  try{await dbS(`games/${G.pin}/players/${G.pid}/answers/${G.qi}`,{choice:idx,elapsed});}catch(e){}
+  G.chan.publish('answer', {pid:G.pid, index:G.qi, choice:idx, elapsed});
   document.getElementById('pans-pts').textContent=G.score;
   go('s-panswered');
-  stopPoll();
-  G.stop=poll(`games/${G.pin}`,game=>{
-    checkTroll(game);
-    if(!game || game.status === 'finished'){stopPoll(); playerFinal(); return;}
-    const me=game.players&&game.players[G.pid];
-    if(me&&me.kicked){stopPoll();go('s-kicked');return;}
-    if(game.status==='reveal'&&game.questionIndex===G.qi){stopPoll();playerReveal(G.qi,game.questions||G.quiz.questions);}
-    if(game.status==='question'&&game.questionIndex>G.qi){stopPoll();clearInterval(G.iv);playerQuestion(game.questionIndex,game.questionStartTime);}
-    if(game.status==='final'){stopPoll();playerFinal();}
-  }, 800);
 }
 
-async function playerReveal(idx,questions){
+async function playerReveal(idx,questions,players){
   const q=(questions||G.quiz.questions)[idx];
-  const my=G.sel;const ok=my!=null&&q.choices[my]?.correct;
-  let earned=0;
-  if(ok){const el=Date.now()-G.t0;earned=calcScore(el,(q.time||20)*1e3);G.score+=earned;try{await dbS(`games/${G.pin}/players/${G.pid}/score`,G.score);}catch(e){}}
-  // Get rank
-  let rank=1,aheadName='';
-  try{
-    const ps=await dbG(`games/${G.pin}/players`)||{};
-    const sorted=Object.values(ps).filter(p=>!p.kicked).sort((a,b)=>(b.score||0)-(a.score||0));
-    rank=sorted.findIndex(p=>p.name===G.pname)+1;
-    if(rank>1)aheadName=sorted[rank-2]?.name||'';
-  }catch(e){}
+  const me = players[G.pid];
+  if(!me) return;
+  G.score = me.score;
+  const earned = me.lastEarned || 0;
+  const ok = me.lastCorrect;
+  
+  const sorted = Object.values(players).filter(p=>!p.kicked).sort((a,b)=>b.score-a.score);
+  const rank = sorted.findIndex(p=>p.name===G.pname)+1;
+  const aheadName = rank > 1 ? sorted[rank-2]?.name : '';
+
   const showFakeWrong = forceFakeResultOnce;
   forceFakeResultOnce = false;
   const shownCorrect = ok && !showFakeWrong;
+
   document.getElementById('presult-circle').innerHTML=shownCorrect?SVG_CIRCLE_CHECK:SVG_CIRCLE_X;
-  document.getElementById('presult-msg').textContent=shownCorrect?'Correct!':my==null?'Too Slow!':'Wrong!';
+  document.getElementById('presult-msg').textContent=shownCorrect?'Correct!':G.sel==null?'Too Slow!':'Wrong!';
   document.getElementById('presult-rank').textContent=`You are top ${rank}${aheadName?`, behind ${aheadName}`:''}`;
   const ptsEl=document.getElementById('presult-pts');
   if(ok){ptsEl.style.display='block';ptsEl.textContent=`+${earned}`;}else ptsEl.style.display='none';
@@ -1760,23 +1737,11 @@ async function playerReveal(idx,questions){
   document.getElementById('presult-uname').textContent=G.pname;
   if(shownCorrect)confetti(2200);
   go('s-presult');
-  stopPoll();
-  G.stop=poll(`games/${G.pin}`,game=>{
-    checkTroll(game);
-    if(!game || game.status === 'finished'){stopPoll(); playerFinal(); return;}
-    const me=game.players&&game.players[G.pid];
-    if(me&&me.kicked){stopPoll();go('s-kicked');return;}
-    if(game.status==='prepared'&&game.questionIndex>idx){stopPoll();playerPrepared(game.questionIndex);}
-    if(game.status==='question'&&game.questionIndex>idx){stopPoll();playerQuestion(game.questionIndex,game.questionStartTime);}
-    if(game.status==='final'){stopPoll();playerFinal();}
-  }, 800);
 }
 
-async function playerFinal(){
-  load('Loading final scores…');
-  const players=await dbG(`games/${G.pin}/players`)||{};unload();
-  const sorted=Object.values(players).filter(p=>!p.kicked).sort((a,b)=>(b.score||0)-(a.score||0));
-  const rank=sorted.findIndex(p=>p.name===G.pname)+1;
+async function playerFinal(players){
+  const sorted = Object.values(players||{}).filter(p=>!p.kicked).sort((a,b)=>b.score-a.score);
+  const rank = sorted.findIndex(p=>p.name===G.pname)+1;
   const em=rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':'🎮';
   document.getElementById('pfin-emoji').textContent=em;
   document.getElementById('pfin-rank').textContent=`#${rank} of ${sorted.length}`;
