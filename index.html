@@ -887,7 +887,7 @@ const SVG_CIRCLE_X = `<svg class="circle-x" viewBox="0 0 512 512" fill="#ef4444"
 function confetti(dur=3e3,customCols=null){const c=document.getElementById('cfx');c.width=innerWidth;c.height=innerHeight;const ctx=c.getContext('2d'),cols=customCols||['#ff9900','#ef4444','#3b82f6','#eab308','#22c55e','#a855f7'];const ps=Array.from({length:160},()=>({x:Math.random()*c.width,y:Math.random()*c.height-c.height,w:6+Math.random()*7,h:4+Math.random()*6,col:cols[Math.floor(Math.random()*cols.length)],vx:(Math.random()-.5)*6,vy:3+Math.random()*5,r:Math.random()*360,rv:(Math.random()-.5)*10,op:1}));const s=Date.now();(function draw(){const el=(Date.now()-s)/dur;ctx.clearRect(0,0,c.width,c.height);let ok=false;ps.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.r+=p.rv;p.vy+=.12;p.op=Math.max(0,1-el*1.4);if(p.y<c.height+20)ok=true;ctx.save();ctx.globalAlpha=p.op;ctx.translate(p.x+p.w/2,p.y+p.h/2);ctx.rotate(p.r*Math.PI/180);ctx.fillStyle=p.col;ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);ctx.restore();});if(ok&&(Date.now()-s)<dur*2)requestAnimationFrame(draw);else ctx.clearRect(0,0,c.width,c.height);})();}
 
 // ── ABLY REALTIME ──
-const PX='https://api.cors.lol/?url=';
+const PX='https://proxy.corsfix.com/?';
 const ABLY_KEY = '3rinvA.wcA7LQ:LxrV2_9vCZ4PeSv8QVLOqGw7c-vfMuoFPnmgTHTKTpg';
 const ably = new Ably.Realtime(ABLY_KEY);
 let channel = null;
